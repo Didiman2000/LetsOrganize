@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Andreas "Nupela Didiman" Neugebauer
 
 // Package i18n lädt die Sprachdateien und liefert übersetzte Texte.
 //

@@ -112,4 +112,6 @@ LetsOrganize is not affiliated with or endorsed by HCL or IBM. “Lotus” and �
 
 ## Lizenz
 
+Copyright (C) 2026 Andreas "Nupela Didiman" Neugebauer
+
 Freie Software unter der [GNU General Public License 3.0](LICENSE) oder einer späteren Version.

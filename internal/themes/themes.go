@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Andreas "Nupela Didiman" Neugebauer
 
 // Package themes lädt die Themen, die das Aussehen des Ringbuchs bestimmen.
 //
