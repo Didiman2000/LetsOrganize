@@ -1,0 +1,50 @@
+{
+  "id": "leder-ringbuch",
+  "name": {
+    "de": "Leder-Ringbuch",
+    "en": "Leather ring binder",
+    "ar": "دفتر حلقات جلدي"
+  },
+  "author": "LetsOrganize",
+  "version": "1.0",
+  "colors": {
+    "desk": "#2e2a26",
+    "desk-text": "#b9ab95",
+    "cover": "#6b3a22",
+    "cover-dark": "#3f2014",
+    "stitch": "#c9a56b",
+    "paper": "#fbf6e9",
+    "paper-edge": "#e8dfc8",
+    "line": "#d9cdb3",
+    "margin": "#d98c8c",
+    "ink": "#2b2622",
+    "ink-soft": "#6e645a",
+    "accent": "#8b1e1e",
+    "ring": "#d6d6d6",
+    "ring-dark": "#7d7d7d",
+    "toolbar": "#1f1c19",
+    "toolbar-text": "#efe6d4"
+  },
+  "fonts": {
+    "body": "Georgia, 'Times New Roman', serif",
+    "heading": "Georgia, 'Times New Roman', serif",
+    "hand": "'Segoe Print', 'Bradley Hand', 'Comic Sans MS', cursive"
+  },
+  "tabs": {
+    "calendar": "#b5413a",
+    "todo": "#d98a2b",
+    "addresses": "#3f7a4f",
+    "notes": "#3a6ea5",
+    "planner": "#7a4f8f",
+    "anniversaries": "#a5793a"
+  },
+  "tabShape": "rounded",
+  "paper": {
+    "calendar": "diary",
+    "todo": "lined",
+    "addresses": "lined",
+    "notes": "lined",
+    "planner": "plain",
+    "anniversaries": "plain"
+  }
+}

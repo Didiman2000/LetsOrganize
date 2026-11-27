@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="{{.Lang}}" dir="{{.Dir}}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{t .Lang "app.title"}}</title>
+  <link rel="icon" href="/static/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/app.css">
+  <link rel="stylesheet" href="/theme.css">
+  <script src="/static/app.js" defer></script>
+</head>
+<body data-tab-shape="{{.TabShape}}">
+  <header class="toolbar">
+    <div class="brand">
+      <img src="/static/icon.svg" alt="" width="28" height="28">
+      <span class="brand-name">{{t .Lang "app.title"}}</span>
+      <span class="brand-tagline">{{t .Lang "app.tagline"}}</span>
+    </div>
+    <form class="prefs" method="get" action="/">
+      <label>
+        <span>{{t .Lang "toolbar.language"}}</span>
+        <select name="lang" data-autosubmit>
+          {{range .Languages}}<option value="{{.Code}}"{{if eq .Code $.Lang}} selected{{end}}>{{.Name}}</option>{{end}}
+        </select>
+      </label>
+      <label>
+        <span>{{t .Lang "toolbar.theme"}}</span>
+        <select name="theme" data-autosubmit>
+          {{range .Themes}}<option value="{{.ID}}"{{if eq .ID $.Theme.ID}} selected{{end}}>{{.Name}}</option>{{end}}
+        </select>
+      </label>
+      <noscript><button type="submit">OK</button></noscript>
+    </form>
+  </header>
+
+  <main class="desk">
+    <div class="binder" id="binder" data-section="calendar" data-lang="{{.Lang}}" data-week-start="{{.WeekStart}}">
+      <div class="cover">
+        <div class="spread">
+          <section class="page page-start" id="page-start" aria-live="polite"></section>
+          <div class="rings" aria-hidden="true">
+            <span class="ring"></span><span class="ring"></span><span class="ring"></span>
+            <span class="ring"></span><span class="ring"></span><span class="ring"></span>
+          </div>
+          <section class="page page-end" id="page-end"></section>
+        </div>
+        <nav class="tabs" aria-label="{{t .Lang "tabs.label"}}">
+          {{range .Tabs}}<button type="button" class="tab" data-tab="{{.ID}}" data-paper="{{.Paper}}"><span>{{.Label}}</span></button>{{end}}
+        </nav>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">{{t .Lang "footer.license"}}</footer>
+</body>
+</html>

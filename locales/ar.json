@@ -1,0 +1,23 @@
+{
+  "meta": { "name": "العربية", "dir": "rtl", "weekStart": 6 },
+  "messages": {
+    "app.title": "LetsOrganize",
+    "app.tagline": "منظِّمك الشخصي في دفتر الحلقات",
+    "toolbar.language": "اللغة",
+    "toolbar.theme": "السمة",
+    "tab.calendar": "التقويم",
+    "tab.todo": "المهام",
+    "tab.addresses": "العناوين",
+    "tab.notes": "الملاحظات",
+    "tab.planner": "المخطِّط",
+    "tab.anniversaries": "المناسبات",
+    "tabs.label": "الأقسام",
+    "calendar.week": "الأسبوع {n}",
+    "calendar.prev": "الأسبوع السابق",
+    "calendar.next": "الأسبوع التالي",
+    "calendar.today": "اليوم",
+    "calendar.empty": "لا توجد مواعيد",
+    "section.soon": "سيتوفر هذا القسم في مرحلة لاحقة.",
+    "footer.license": "برنامج حر بموجب رخصة GNU GPL 3.0"
+  }
+}

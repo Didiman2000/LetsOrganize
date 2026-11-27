@@ -1,0 +1,50 @@
+{
+  "id": "nachtblau-leinen",
+  "name": {
+    "de": "Nachtblau Leinen",
+    "en": "Midnight linen",
+    "ar": "كتان أزرق داكن"
+  },
+  "author": "LetsOrganize",
+  "version": "1.0",
+  "colors": {
+    "desk": "#d9d4cc",
+    "desk-text": "#4a5468",
+    "cover": "#1f2d4a",
+    "cover-dark": "#121b2e",
+    "stitch": "#9fb3d1",
+    "paper": "#ffffff",
+    "paper-edge": "#e3e6ec",
+    "line": "#c9d3e3",
+    "margin": "#9fb3d1",
+    "ink": "#1b2230",
+    "ink-soft": "#5b6478",
+    "accent": "#c0392b",
+    "ring": "#e6c66b",
+    "ring-dark": "#8a6d1e",
+    "toolbar": "#121b2e",
+    "toolbar-text": "#e9eef7"
+  },
+  "fonts": {
+    "body": "'Segoe UI', 'Helvetica Neue', Arial, sans-serif",
+    "heading": "'Palatino Linotype', Palatino, Georgia, serif",
+    "hand": "'Segoe Print', 'Bradley Hand', cursive"
+  },
+  "tabs": {
+    "calendar": "#c0392b",
+    "todo": "#e67e22",
+    "addresses": "#27ae60",
+    "notes": "#2980b9",
+    "planner": "#8e44ad",
+    "anniversaries": "#b9975b"
+  },
+  "tabShape": "square",
+  "paper": {
+    "calendar": "diary",
+    "todo": "dotted",
+    "addresses": "lined",
+    "notes": "grid",
+    "planner": "plain",
+    "anniversaries": "plain"
+  }
+}

@@ -1,0 +1,18 @@
+# Programmdateien
+/letsorganize
+/LetsOrganize
+*.exe
+/dist/
+
+# Lokale Daten
+/LetsOrganize-Daten/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Editor und System
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

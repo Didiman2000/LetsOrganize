@@ -1,0 +1,23 @@
+{
+  "meta": { "name": "English", "dir": "ltr", "weekStart": 1 },
+  "messages": {
+    "app.title": "LetsOrganize",
+    "app.tagline": "Your organizer in a ring binder",
+    "toolbar.language": "Language",
+    "toolbar.theme": "Theme",
+    "tab.calendar": "Calendar",
+    "tab.todo": "To Do",
+    "tab.addresses": "Addresses",
+    "tab.notes": "Notes",
+    "tab.planner": "Planner",
+    "tab.anniversaries": "Anniversaries",
+    "tabs.label": "Sections",
+    "calendar.week": "Week {n}",
+    "calendar.prev": "Previous week",
+    "calendar.next": "Next week",
+    "calendar.today": "Today",
+    "calendar.empty": "No appointments",
+    "section.soon": "This section is coming in a later phase.",
+    "footer.license": "Free software under the GNU GPL 3.0"
+  }
+}

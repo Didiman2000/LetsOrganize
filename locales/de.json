@@ -1,0 +1,23 @@
+{
+  "meta": { "name": "Deutsch", "dir": "ltr", "weekStart": 1 },
+  "messages": {
+    "app.title": "LetsOrganize",
+    "app.tagline": "Dein Organizer im Ringbuch",
+    "toolbar.language": "Sprache",
+    "toolbar.theme": "Thema",
+    "tab.calendar": "Kalender",
+    "tab.todo": "Aufgaben",
+    "tab.addresses": "Adressen",
+    "tab.notes": "Notizen",
+    "tab.planner": "Planer",
+    "tab.anniversaries": "Jahrestage",
+    "tabs.label": "Register",
+    "calendar.week": "KW {n}",
+    "calendar.prev": "Vorherige Woche",
+    "calendar.next": "Nächste Woche",
+    "calendar.today": "Heute",
+    "calendar.empty": "Keine Termine",
+    "section.soon": "Dieser Bereich folgt in einer späteren Phase.",
+    "footer.license": "Freie Software unter der GNU GPL 3.0"
+  }
+}
