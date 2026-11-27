@@ -43,9 +43,10 @@ Später: Anrufe, Gmail-Anbindung, Verknüpfungen zwischen Einträgen, Mehrbenutz
 - [x] Rechts-nach-links: logische CSS-Eigenschaften, gespiegeltes Ringbuch, Test mit Arabisch
 - [x] Themen: zwei mitgelieferte Themen, eigene Themen im Datenordner, strenge Prüfung der Werte
 - [x] Ringbuch-Oberfläche: Einband, Ringe, Register, Wochenansicht, Jahresplaner (ohne Daten)
-- [ ] SQLite-Datenbank mit Migrationen (Treiber `modernc.org/sqlite`, reines Go)
-- [ ] Datenmodell: Termine, Aufgaben, Kontakte, Notizen, Jahrestage, Planer-Einträge
-- [ ] Anmeldung (einfach, aber serverfähig) und Nutzer-Trennung im Datenmodell
+- [x] SQLite-Datenbank mit Migrationen (Treiber `modernc.org/sqlite`, reines Go)
+- [x] Datenmodell: Termine, Aufgaben, Kontakte, Notizen, Jahrestage, Planer-Einträge, Kategorien, Google-Konten, Abgleich-Status
+- [x] Nutzer-Trennung im Datenmodell, Benutzer und Sitzungen (PBKDF2-Passwörter, gehashte Sitzungstokens), lokaler Benutzer
+- [ ] Anmeldeseite für den Serverbetrieb (lokal ohne Anmeldung)
 - [ ] Build für Windows mit Programmsymbol, Dockerfile
 
 ### Phase 2 – Ringbuch-Oberfläche ausbauen

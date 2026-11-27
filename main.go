@@ -9,6 +9,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"log"
 	"net/http"
@@ -17,6 +18,7 @@ import (
 	"time"
 
 	"github.com/Didiman2000/LetsOrganize/internal/server"
+	"github.com/Didiman2000/LetsOrganize/internal/store"
 )
 
 func main() {
@@ -28,9 +30,21 @@ func main() {
 		log.Fatalf("Datenordner %s kann nicht angelegt werden: %v", *dataDir, err)
 	}
 
+	ctx := context.Background()
+	db, err := store.Open(ctx, filepath.Join(*dataDir, "letsorganize.db"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+	version, _ := db.Version(ctx)
+	if _, err := db.EnsureLocalUser(ctx); err != nil {
+		log.Fatal(err)
+	}
+
 	handler, err := server.New(server.Config{
 		Assets:  assets,
 		DataDir: *dataDir,
+		Store:   db,
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -41,7 +55,7 @@ func main() {
 		Handler:           handler,
 		ReadHeaderTimeout: 10 * time.Second,
 	}
-	log.Printf("LetsOrganize läuft auf http://%s (Daten: %s)", *addr, *dataDir)
+	log.Printf("LetsOrganize läuft auf http://%s (Daten: %s, Schema %d)", *addr, *dataDir, version)
 	log.Fatal(srv.ListenAndServe())
 }
 

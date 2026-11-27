@@ -26,7 +26,7 @@ Voraussetzung: [Go](https://go.dev/dl/) ab Version 1.24.
 go run .
 ```
 
-Dann im Browser <http://127.0.0.1:8470> öffnen.
+Dann im Browser <http://127.0.0.1:8470> öffnen. Die Daten liegen in `letsorganize.db` im Datenordner (SQLite).
 
 Optionen:
 
@@ -97,6 +97,8 @@ Für die Oberfläche gilt: nur logische CSS-Eigenschaften (`margin-inline-start`
 main.go, assets.go     Programmstart, eingebettete Dateien
 internal/server        Weboberfläche und Schnittstellen
 internal/i18n          Sprachdateien
+internal/store         Datenbank, Migrationen, Benutzer
+internal/store/migrations  Schema als nummerierte SQL-Dateien
 internal/themes        Themen
 locales/               Übersetzungen
 themes/                mitgelieferte Themen

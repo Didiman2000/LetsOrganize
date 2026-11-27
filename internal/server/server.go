@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/Didiman2000/LetsOrganize/internal/i18n"
+	"github.com/Didiman2000/LetsOrganize/internal/store"
 	"github.com/Didiman2000/LetsOrganize/internal/themes"
 )
 
@@ -24,6 +25,8 @@ type Config struct {
 	Assets fs.FS
 	// DataDir ist der Ordner für Daten und eigene Themen.
 	DataDir string
+	// Store ist die Datenbank; nil nur in Tests der Oberfläche.
+	Store *store.Store
 }
 
 // Server ist der HTTP-Handler von LetsOrganize.
@@ -77,6 +80,7 @@ func New(cfg Config) (*Server, error) {
 	s.mux.HandleFunc("GET /api/messages/{lang}", s.handleMessages)
 	s.mux.HandleFunc("GET /api/themes", s.handleThemes)
 	s.mux.HandleFunc("GET /api/themes/{id}", s.handleTheme)
+	s.mux.HandleFunc("GET /api/status", s.handleStatus)
 	return s, nil
 }
 
@@ -190,6 +194,19 @@ func (s *Server) handleTheme(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, s.themes.Get(id))
+}
+
+func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
+	status := map[string]any{"ok": true, "schemaLatest": store.LatestVersion()}
+	if s.cfg.Store != nil {
+		v, err := s.cfg.Store.Version(r.Context())
+		if err != nil {
+			log.Printf("Status: %v", err)
+			status["ok"] = false
+		}
+		status["schema"] = v
+	}
+	writeJSON(w, status)
 }
 
 func writeJSON(w http.ResponseWriter, v any) {
