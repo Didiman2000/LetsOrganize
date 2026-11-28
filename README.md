@@ -51,7 +51,9 @@ go test ./...
 
 ## Google-Abgleich
 
-Der Abgleich mit Google Kalender, Kontakte und Aufgaben ist in Arbeit. Den nötigen eigenen Google-Zugang beschreibt [docs/GOOGLE-EINRICHTUNG.md](docs/GOOGLE-EINRICHTUNG.md).
+Der Hauptkalender wird mit Google Kalender in beide Richtungen abgeglichen – alle fünf Minuten und auf Knopfdruck (Knopf „Google“ oben rechts). Kontakte und Aufgaben folgen. Den nötigen eigenen Google-Zugang beschreibt [docs/GOOGLE-EINRICHTUNG.md](docs/GOOGLE-EINRICHTUNG.md).
+
+Das Google-Token liegt verschlüsselt in der Datenbank; der Schlüssel `secret.key` liegt im Datenordner. Den Datenordner daher nicht in geteilte Cloud-Ordner legen.
 
 ## Themen
 
@@ -102,6 +104,9 @@ main.go, assets.go     Programmstart, eingebettete Dateien
 internal/server        Weboberfläche und Schnittstellen
 internal/i18n          Sprachdateien
 internal/store         Datenbank, Migrationen, Benutzer
+internal/recur         Wiederholungsregeln (RRULE)
+internal/google        Anmeldung bei Google und Abgleich
+internal/secret        Verschlüsselung der Tokens
 internal/store/migrations  Schema als nummerierte SQL-Dateien
 internal/themes        Themen
 locales/               Übersetzungen

@@ -619,6 +619,31 @@ body[data-tab-shape="notched"] .tab { border-start-end-radius: 14px 4px; border-
 .series-hint { margin: 0; font-size: 13px; color: var(--lo-color-ink-soft); font-style: italic; }
 .event .repeat-mark { margin-inline-start: 4px; color: var(--lo-color-ink-soft); font-family: var(--lo-font-body); font-size: 12px; }
 
+/* ---------- Google ---------- */
+
+.google-button {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding-block: 4px; padding-inline: 10px;
+  border: 1px solid color-mix(in srgb, var(--lo-color-toolbar-text) 35%, transparent);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--lo-color-toolbar) 80%, white);
+  color: var(--lo-color-toolbar-text);
+  font: inherit; font-size: 14px;
+  cursor: pointer;
+}
+.google-dot { inline-size: 9px; block-size: 9px; border-radius: 50%; background: #9a9a9a; }
+.google-button[data-state=connected] .google-dot { background: #3fae5a; }
+.google-button[data-state=error] .google-dot { background: #d9534f; }
+.google-button[data-state=running] .google-dot { background: #e6b422; animation: pulse 1s infinite alternate; }
+@keyframes pulse { from { opacity: 0.4; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .google-button[data-state=running] .google-dot { animation: none; } }
+.google-dialog { border-block-start-color: #4285f4; }
+.google-dialog h2 { color: var(--lo-color-ink); }
+.google-state { margin: 0; font-size: 15px; }
+.google-detail { margin: 0; font-size: 13px; color: var(--lo-color-ink-soft); }
+.google-problems { margin: 0; padding-inline-start: 18px; font-size: 13px; color: var(--lo-color-accent); }
+.google-problems:empty { display: none; }
+
 /* ---------- Rechts nach links ---------- */
 
 [dir="rtl"] .page-start::after { background: linear-gradient(to left,  transparent, rgba(0, 0, 0, 0.13)); }

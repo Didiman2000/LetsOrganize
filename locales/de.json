@@ -120,6 +120,24 @@
     "repeat.seriesHint": "Änderungen gelten für die ganze Serie.",
     "repeat.deleteOne": "Nur diesen Termin löschen",
     "repeat.deleteAll": "Ganze Serie löschen",
-    "repeat.symbol": "Serie"
+    "repeat.symbol": "Serie",
+    "google.button": "Google",
+    "google.title": "Abgleich mit Google",
+    "google.notConfigured": "Google ist noch nicht eingerichtet. Lege google-client.json in den Datenordner (Anleitung: docs/GOOGLE-EINRICHTUNG.md) und starte LetsOrganize neu.",
+    "google.notConnected": "Nicht verbunden. Nach der Anmeldung gleicht LetsOrganize deinen Hauptkalender alle fünf Minuten automatisch ab.",
+    "google.firstSync": "Beim ersten Abgleich werden auch alle Termine, die schon in LetsOrganize stehen, in deinen Google-Kalender übertragen.",
+    "google.connectedAs": "Verbunden mit {email}.",
+    "google.lastSync": "Letzter Abgleich: {time}.",
+    "google.never": "Noch kein Abgleich.",
+    "google.report": "{pulled} von Google übernommen, {pushed} hochgeladen, {deleted} gelöscht.",
+    "google.syncing": "Gleicht ab …",
+    "google.connect": "Mit Google verbinden",
+    "google.sync": "Jetzt abgleichen",
+    "google.disconnect": "Verbindung trennen",
+    "google.disconnectSure": "Wirklich trennen? Deine Termine bleiben in LetsOrganize erhalten.",
+    "google.close": "Schließen",
+    "google.connected": "Verbindung hergestellt.",
+    "google.failed": "Anmeldung bei Google fehlgeschlagen:",
+    "google.error": "Fehler beim Abgleich:"
   }
 }

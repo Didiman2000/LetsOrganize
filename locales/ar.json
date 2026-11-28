@@ -120,6 +120,24 @@
     "repeat.seriesHint": "تنطبق التغييرات على السلسلة كلها.",
     "repeat.deleteOne": "حذف هذا الموعد فقط",
     "repeat.deleteAll": "حذف السلسلة كلها",
-    "repeat.symbol": "سلسلة"
+    "repeat.symbol": "سلسلة",
+    "google.button": "Google",
+    "google.title": "المزامنة مع Google",
+    "google.notConfigured": "لم يتم إعداد Google بعد. ضع الملف google-client.json في مجلد البيانات (الدليل: docs/GOOGLE-EINRICHTUNG.md) وأعد تشغيل LetsOrganize.",
+    "google.notConnected": "غير متصل. بعد تسجيل الدخول يزامن LetsOrganize تقويمك الرئيسي تلقائيًا كل خمس دقائق.",
+    "google.firstSync": "تنقل المزامنة الأولى أيضًا كل المواعيد الموجودة في LetsOrganize إلى تقويم Google.",
+    "google.connectedAs": "متصل بالحساب {email}.",
+    "google.lastSync": "آخر مزامنة: {time}.",
+    "google.never": "لم تتم أي مزامنة بعد.",
+    "google.report": "{pulled} من Google، {pushed} مرفوعة، {deleted} محذوفة.",
+    "google.syncing": "جارٍ المزامنة …",
+    "google.connect": "الاتصال بـ Google",
+    "google.sync": "مزامنة الآن",
+    "google.disconnect": "قطع الاتصال",
+    "google.disconnectSure": "هل تريد قطع الاتصال فعلًا؟ تبقى مواعيدك في LetsOrganize.",
+    "google.close": "إغلاق",
+    "google.connected": "تم الاتصال.",
+    "google.failed": "فشل تسجيل الدخول إلى Google:",
+    "google.error": "خطأ في المزامنة:"
   }
 }

@@ -120,6 +120,24 @@
     "repeat.seriesHint": "Changes apply to the whole series.",
     "repeat.deleteOne": "Delete only this one",
     "repeat.deleteAll": "Delete whole series",
-    "repeat.symbol": "Series"
+    "repeat.symbol": "Series",
+    "google.button": "Google",
+    "google.title": "Sync with Google",
+    "google.notConfigured": "Google is not set up yet. Put google-client.json into the data folder (guide: docs/GOOGLE-EINRICHTUNG.md) and restart LetsOrganize.",
+    "google.notConnected": "Not connected. After signing in, LetsOrganize syncs your primary calendar automatically every five minutes.",
+    "google.firstSync": "The first sync also copies all appointments already in LetsOrganize to your Google Calendar.",
+    "google.connectedAs": "Connected as {email}.",
+    "google.lastSync": "Last sync: {time}.",
+    "google.never": "Not synced yet.",
+    "google.report": "{pulled} taken from Google, {pushed} uploaded, {deleted} deleted.",
+    "google.syncing": "Syncing …",
+    "google.connect": "Connect to Google",
+    "google.sync": "Sync now",
+    "google.disconnect": "Disconnect",
+    "google.disconnectSure": "Really disconnect? Your appointments stay in LetsOrganize.",
+    "google.close": "Close",
+    "google.connected": "Connected.",
+    "google.failed": "Google sign-in failed:",
+    "google.error": "Sync error:"
   }
 }

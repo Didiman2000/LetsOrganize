@@ -69,12 +69,13 @@ MCP-Schnittstelle für externe KI-Agenten (siehe Phase 7). Später: Anrufe, Gmai
 - [ ] Erinnerungen, Kategorien
 
 ### Phase 4 – Google-Abgleich
-- [ ] OAuth-Anmeldung, Token verschlüsselt speichern
-- [ ] Kalender: Abgleich in beide Richtungen (Sync-Token, Änderungserkennung)
+- [x] OAuth-Anmeldung (Desktop-Client, PKCE, Rückleitung auf 127.0.0.1), Token mit AES-256-GCM verschlüsselt (Schlüssel secret.key im Datenordner), automatische Erneuerung, Trennen mit Widerruf
+- [x] Kalender: Abgleich des Hauptkalenders in beide Richtungen alle 5 Minuten und per Knopf (Sync-Token, ETags, Serien mit RRULE/EXDATE, verschobene und abgesagte Einzeltermine, Migration 0004)
 - [ ] Kontakte: People API, Geburtstage → Jahrestage
 - [ ] Aufgaben: Google Tasks
-- [ ] Konfliktregel festlegen (z. B. letzte Änderung gewinnt, mit Hinweis)
-- [ ] Offline-Betrieb: Änderungen merken und später übertragen
+- [x] Konfliktregel: jüngere Änderung gewinnt; bei Google gelöscht, lokal geändert → neu anlegen
+- [x] Offline-Betrieb: lokale Änderungen werden vorgemerkt und beim nächsten Abgleich übertragen
+- [ ] Weitere Kalender außer dem Hauptkalender
 
 ### Phase 5 – Import der Altdaten
 - [ ] CSV-Import je Bereich mit Feldzuordnung und Vorschau

@@ -186,8 +186,24 @@ func (s *Store) ListEvents(ctx context.Context, userID int64, from, to time.Time
 	if err != nil {
 		return nil, err
 	}
-	for _, e := range series {
-		out = append(out, e.occurrences(from, to)...)
+	if len(series) > 0 {
+		// Vorkommen, die bei Google durch einen abweichenden Einzeltermin
+		// ersetzt wurden, werden ausgelassen.
+		replaced, err := s.replacedOccurrences(ctx, userID)
+		if err != nil {
+			return nil, err
+		}
+		for _, e := range series {
+			if r := replaced[e.ID]; r != nil {
+				if e.exdates == nil {
+					e.exdates = map[string]bool{}
+				}
+				for k := range r {
+					e.exdates[k] = true
+				}
+			}
+			out = append(out, e.occurrences(from, to)...)
+		}
 	}
 	sort.SliceStable(out, func(i, j int) bool {
 		if out[i].AllDay != out[j].AllDay {
@@ -199,6 +215,32 @@ func (s *Store) ListEvents(ctx context.Context, userID int64, from, to time.Time
 		return out[i].ID < out[j].ID
 	})
 	return out, nil
+}
+
+// replacedOccurrences liefert je Serie (lokale ID) die Beginnzeiten der
+// Vorkommen, für die es einen abweichenden Einzeltermin gibt.
+func (s *Store) replacedOccurrences(ctx context.Context, userID int64) (map[int64]map[string]bool, error) {
+	rows, err := s.DB.QueryContext(ctx,
+		`SELECT m.id, x.original_start FROM events x
+		   JOIN events m ON m.user_id = x.user_id AND m.calendar_id = x.calendar_id AND m.remote_id = x.series_remote_id
+		  WHERE x.user_id = ? AND x.series_remote_id <> '' AND x.original_start <> '' AND x.deleted_at IS NULL`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := map[int64]map[string]bool{}
+	for rows.Next() {
+		var id int64
+		var start string
+		if err := rows.Scan(&id, &start); err != nil {
+			return nil, err
+		}
+		if out[id] == nil {
+			out[id] = map[string]bool{}
+		}
+		out[id][start] = true
+	}
+	return out, rows.Err()
 }
 
 func (s *Store) queryEvents(ctx context.Context, q string, args ...any) ([]Event, error) {

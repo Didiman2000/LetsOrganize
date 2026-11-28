@@ -79,3 +79,23 @@ func TestAPI(t *testing.T) {
 		t.Error("statische Dateien")
 	}
 }
+
+func TestIsLoopback(t *testing.T) {
+	for host, want := range map[string]bool{
+		"127.0.0.1:8470": true, "localhost:8470": true, "[::1]:8470": true, "127.0.0.1": true,
+		"192.168.1.10:8470": false, "organizer.example.com": false, "localhost.evil.com:80": false,
+	} {
+		if got := isLoopback(host); got != want {
+			t.Errorf("isLoopback(%q) = %v", host, got)
+		}
+	}
+}
+
+// Ohne laufende Anmeldung wird ?state= ignoriert und die Startseite gezeigt.
+func TestUnknownGoogleStateShowsIndex(t *testing.T) {
+	s := newTestServer(t)
+	rec := get(t, s, "/?state=fremd&code=x", nil)
+	if rec.Code != 200 || !strings.Contains(rec.Body.String(), "binder") {
+		t.Errorf("Startseite: %d", rec.Code)
+	}
+}

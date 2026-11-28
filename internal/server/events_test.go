@@ -127,4 +127,3 @@ func TestRecurringEventsAPI(t *testing.T) {
 		t.Errorf("nach Löschen eines Vorkommens: %d", len(occ))
 	}
 }
-

@@ -837,6 +837,128 @@
     f.title.focus();
   }
 
+  // ---------- Google ----------
+
+  const gButton = document.getElementById("google-button");
+  const gDialog = document.getElementById("google-dialog");
+  let gStatus = null;
+  let gDisconnectArmed = false;
+
+  async function loadGoogle() {
+    try {
+      gStatus = await api("GET", "/api/google/status");
+    } catch (_) {
+      gStatus = null; // ohne Datenbank oder ohne Google-Modul
+    }
+    if (!gButton) return;
+    gButton.hidden = !gStatus;
+    if (!gStatus) return;
+    gButton.dataset.state = gStatus.running ? "running" : gStatus.lastError ? "error" : gStatus.connected ? "connected" : "off";
+    gButton.title = gStatus.connected ? t("google.connectedAs", { email: gStatus.email }) : t("google.title");
+    if (gDialog && gDialog.open) renderGoogle();
+  }
+
+  function renderGoogle(message, error) {
+    const st = gStatus || {};
+    const q = (sel) => gDialog.querySelector(sel);
+    q(".google-state").textContent = message || (!st.configured ? t("google.notConfigured")
+      : st.connected ? t("google.connectedAs", { email: st.email }) : t("google.notConnected"));
+    let detail = "";
+    if (st.connected) {
+      detail = st.lastSync && !st.lastSync.startsWith("0001")
+        ? t("google.lastSync", { time: fmt({ dateStyle: "medium", timeStyle: "short" }).format(new Date(st.lastSync)) })
+        : `${t("google.never")} ${t("google.firstSync")}`;
+      if (st.report) {
+        detail += " " + t("google.report", {
+          pulled: fmtNum.format(st.report.pulled),
+          pushed: fmtNum.format(st.report.pushed),
+          deleted: fmtNum.format(st.report.deleted + st.report.removed),
+        });
+      }
+    } else if (st.configured) {
+      detail = t("google.firstSync");
+    }
+    q(".google-detail").textContent = st.running ? t("google.syncing") : detail;
+    q(".google-problems").replaceChildren(...((st.report && st.report.problems) || []).map((p) => el("li", {}, p)));
+    q(".dialog-error").textContent = error || (st.lastError ? `${t("google.error")} ${st.lastError}` : "");
+    q("[data-action=connect]").hidden = !st.configured || st.connected;
+    q("[data-action=sync]").hidden = !st.connected;
+    q("[data-action=sync]").disabled = !!st.running;
+    const dis = q("[data-action=disconnect]");
+    dis.hidden = !st.connected;
+    dis.textContent = t(gDisconnectArmed ? "google.disconnectSure" : "google.disconnect");
+  }
+
+  async function reloadAll() {
+    await Promise.all([loadWeek(), loadTasks(), loadContacts(), loadNotes(), loadPlanner(), loadAnniversaries()]);
+    render(false);
+  }
+
+  if (gButton && gDialog) {
+    gButton.addEventListener("click", async () => {
+      gDisconnectArmed = false;
+      await loadGoogle();
+      renderGoogle();
+      gDialog.showModal();
+    });
+    gDialog.querySelector("[data-action=connect]").addEventListener("click", async () => {
+      try {
+        const res = await api("POST", "/api/google/connect", {});
+        window.location.assign(res.url);
+      } catch (err) {
+        renderGoogle(null, err.message);
+      }
+    });
+    gDialog.querySelector("[data-action=sync]").addEventListener("click", async () => {
+      gStatus = Object.assign({}, gStatus, { running: true });
+      renderGoogle();
+      gButton.dataset.state = "running";
+      try {
+        await api("POST", "/api/google/sync", {});
+      } catch (_) {}
+      await loadGoogle();
+      renderGoogle();
+      reloadAll();
+    });
+    gDialog.querySelector("[data-action=disconnect]").addEventListener("click", async () => {
+      if (!gDisconnectArmed) {
+        gDisconnectArmed = true;
+        renderGoogle();
+        return;
+      }
+      gDisconnectArmed = false;
+      try {
+        await api("DELETE", "/api/google");
+      } catch (err) {
+        renderGoogle(null, err.message);
+        return;
+      }
+      await loadGoogle();
+      renderGoogle();
+    });
+  }
+
+  // Rückkehr von der Google-Anmeldung: Ergebnis zeigen, Adresse aufräumen.
+  async function handleGoogleReturn() {
+    const params = new URLSearchParams(window.location.search);
+    const result = params.get("google");
+    if (!result || !gDialog) return;
+    history.replaceState(null, "", window.location.pathname);
+    await loadGoogle();
+    if (result === "connected") {
+      renderGoogle(t("google.connected"));
+      gDialog.showModal();
+      // Gleich den ersten Abgleich anstoßen.
+      gDialog.querySelector("[data-action=sync]").click();
+    } else {
+      renderGoogle(null, `${t("google.failed")} ${params.get("message") || ""}`);
+      gDialog.showModal();
+    }
+  }
+
+  // Status regelmäßig auffrischen, damit der automatische Abgleich sichtbar ist.
+  setInterval(() => { if (!document.hidden) loadGoogle(); }, 60000);
+
   // Gemeinsamer Ablauf für einfache Dialoge: Speichern, Löschen, Fehler zeigen.
   function wireDialog(dlg, form, base, readBody, after) {
     if (!form) return;
@@ -1135,6 +1257,6 @@
     .then((r) => r.json())
     .then((data) => { messages = data.messages || {}; })
     .catch(() => {})
-    .then(() => Promise.all([loadWeek(), loadTasks(), loadContacts(), loadNotes(), loadPlanner(), loadAnniversaries()]))
-    .finally(() => render(false));
+    .then(() => Promise.all([loadWeek(), loadTasks(), loadContacts(), loadNotes(), loadPlanner(), loadAnniversaries(), loadGoogle()]))
+    .finally(() => { render(false); handleGoogleReturn(); });
 })();

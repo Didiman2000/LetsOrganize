@@ -20,6 +20,8 @@ import (
 	// ließen sich Serien nicht in Europe/Berlin usw. berechnen.
 	_ "time/tzdata"
 
+	"github.com/Didiman2000/LetsOrganize/internal/google"
+	"github.com/Didiman2000/LetsOrganize/internal/secret"
 	"github.com/Didiman2000/LetsOrganize/internal/server"
 	"github.com/Didiman2000/LetsOrganize/internal/store"
 )
@@ -40,14 +42,32 @@ func main() {
 	}
 	defer db.Close()
 	version, _ := db.Version(ctx)
-	if _, err := db.EnsureLocalUser(ctx); err != nil {
+
+	box, err := secret.LoadOrCreate(filepath.Join(*dataDir, "secret.key"))
+	if err != nil {
 		log.Fatal(err)
 	}
+	var gclient *google.Client
+	clientFile := filepath.Join(*dataDir, "google-client.json")
+	if _, err := os.Stat(clientFile); err == nil {
+		if gclient, err = google.LoadClient(clientFile); err != nil {
+			log.Printf("Google-Abgleich aus: %v", err)
+		}
+	} else {
+		log.Printf("Google-Abgleich aus: %s fehlt (siehe docs/GOOGLE-EINRICHTUNG.md)", clientFile)
+	}
+	gm := google.NewManager(db, box, gclient)
+	local, err := db.EnsureLocalUser(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+	go gm.Run(ctx, func() []int64 { return []int64{local.ID} }, 5*time.Minute)
 
 	handler, err := server.New(server.Config{
 		Assets:  assets,
 		DataDir: *dataDir,
 		Store:   db,
+		Google:  gm,
 	})
 	if err != nil {
 		log.Fatal(err)

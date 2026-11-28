@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/Didiman2000/LetsOrganize/internal/google"
 	"github.com/Didiman2000/LetsOrganize/internal/i18n"
 	"github.com/Didiman2000/LetsOrganize/internal/store"
 	"github.com/Didiman2000/LetsOrganize/internal/themes"
@@ -28,6 +29,8 @@ type Config struct {
 	DataDir string
 	// Store ist die Datenbank; nil nur in Tests der Oberfläche.
 	Store *store.Store
+	// Google ist der Abgleich mit Google; nil schaltet ihn ab.
+	Google *google.Manager
 }
 
 // Server ist der HTTP-Handler von LetsOrganize.
@@ -95,6 +98,9 @@ func New(cfg Config) (*Server, error) {
 		s.routesTasks()
 		s.routesContacts()
 		s.routesRegisters()
+		if cfg.Google != nil {
+			s.routesGoogle()
+		}
 	}
 	return s, nil
 }
@@ -146,6 +152,9 @@ type tabView struct {
 }
 
 func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
+	if s.googleCallback(w, r) {
+		return
+	}
 	lang, themeID := s.prefs(w, r)
 	loc := s.lang.Get(lang)
 	th := s.themes.Get(themeID)

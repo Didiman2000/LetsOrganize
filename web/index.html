@@ -31,6 +31,9 @@
       </label>
       <noscript><button type="submit">OK</button></noscript>
     </form>
+    <button type="button" class="google-button" id="google-button" hidden>
+      <span class="google-dot" aria-hidden="true"></span>{{t .Lang "google.button"}}
+    </button>
   </header>
 
   <main class="desk">
@@ -207,6 +210,23 @@
         <span class="spacer"></span>
         <button type="submit" value="cancel" formnovalidate>{{t .Lang "event.cancel"}}</button>
         <button type="submit" value="save" class="primary">{{t .Lang "event.save"}}</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="event-dialog google-dialog" id="google-dialog">
+    <form method="dialog">
+      <h2 class="dialog-title">{{t .Lang "google.title"}}</h2>
+      <p class="google-state"></p>
+      <p class="google-detail"></p>
+      <ul class="google-problems"></ul>
+      <p class="dialog-error" role="alert"></p>
+      <div class="buttons">
+        <button type="button" class="danger" data-action="disconnect" hidden>{{t .Lang "google.disconnect"}}</button>
+        <span class="spacer"></span>
+        <button type="submit" value="cancel">{{t .Lang "google.close"}}</button>
+        <button type="button" class="primary" data-action="connect" hidden>{{t .Lang "google.connect"}}</button>
+        <button type="button" class="primary" data-action="sync" hidden>{{t .Lang "google.sync"}}</button>
       </div>
     </form>
   </dialog>
