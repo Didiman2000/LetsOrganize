@@ -20,7 +20,7 @@ Grundgerüst (Phase 1 der [Roadmap](docs/ROADMAP.md)):
 
 ## Starten
 
-Voraussetzung: [Go](https://go.dev/dl/) ab Version 1.24.
+Voraussetzung: [Go](https://go.dev/dl/) ab Version 1.26.
 
 ```sh
 go run .
