@@ -229,6 +229,8 @@ func writeJSON(w http.ResponseWriter, v any) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
+	// & < > nicht als \u0026 usw. umschreiben; Antworten sind JSON, kein HTML.
+	enc.SetEscapeHTML(false)
 	if err := enc.Encode(v); err != nil {
 		log.Printf("JSON: %v", err)
 	}
