@@ -1,5 +1,9 @@
 {
-  "meta": { "name": "العربية", "dir": "rtl", "weekStart": 6 },
+  "meta": {
+    "name": "العربية",
+    "dir": "rtl",
+    "weekStart": 6
+  },
   "messages": {
     "app.title": "LetsOrganize",
     "app.tagline": "منظِّمك الشخصي في دفتر الحلقات",
@@ -18,6 +22,20 @@
     "calendar.today": "اليوم",
     "calendar.empty": "لا توجد مواعيد",
     "section.soon": "سيتوفر هذا القسم في مرحلة لاحقة.",
-    "footer.license": "برنامج حر بموجب رخصة GNU GPL 3.0"
+    "footer.license": "برنامج حر بموجب رخصة GNU GPL 3.0",
+    "event.new": "موعد جديد",
+    "event.edit": "تعديل الموعد",
+    "event.title": "الموضوع",
+    "event.allDay": "طوال اليوم",
+    "event.date": "البداية",
+    "event.endDate": "النهاية",
+    "event.start": "الوقت",
+    "event.end": "الوقت",
+    "event.location": "المكان",
+    "event.notes": "ملاحظة",
+    "event.save": "حفظ",
+    "event.cancel": "إلغاء",
+    "event.delete": "حذف",
+    "event.error": "تعذّر الحفظ:"
   }
 }

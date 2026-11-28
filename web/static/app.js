@@ -84,21 +84,181 @@
 
   // ---------- Abschnitte ----------
 
+  // ---------- Termine ----------
+
+  let events = [];
+  let eventsLoaded = false;
+  const dialog = document.getElementById("event-dialog");
+  const form = dialog && dialog.querySelector("form");
+
+  const pad = (n) => String(n).padStart(2, "0");
+  const dateKey = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const utcKey = (d) => `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
+  const timeValue = (d) => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+
+  async function api(method, url, body) {
+    const opts = { method, headers: { "X-LetsOrganize": "1" } };
+    if (body !== undefined) {
+      opts.headers["Content-Type"] = "application/json";
+      opts.body = JSON.stringify(body);
+    }
+    const res = await fetch(url, opts);
+    if (!res.ok) {
+      let msg = res.statusText;
+      try { const j = await res.json(); msg = j.field ? `${j.field}: ${j.message}` : j.message || msg; } catch (_) {}
+      throw new Error(msg);
+    }
+    return res.status === 204 ? null : res.json();
+  }
+
+  async function loadWeek() {
+    const from = weekAnchor;
+    const to = addDays(weekAnchor, 7);
+    try {
+      events = await api("GET", `/api/events?from=${encodeURIComponent(from.toISOString())}&to=${encodeURIComponent(to.toISOString())}`);
+      eventsLoaded = true;
+    } catch (_) {
+      events = [];
+      eventsLoaded = false;
+    }
+  }
+
+  // Termine, die den Tag d (lokale Zeit) berühren.
+  function eventsOn(d) {
+    const key = dateKey(d);
+    const dayStart = d;
+    const dayEnd = addDays(d, 1);
+    return events.filter((e) => {
+      const s = new Date(e.start);
+      const en = new Date(e.end);
+      if (e.allDay) return utcKey(s) <= key && key < utcKey(en);
+      return s < dayEnd && (en > dayStart || (+en === +s && s >= dayStart));
+    });
+  }
+
+  function eventLabel(e, d) {
+    if (e.allDay) return e.title;
+    const s = new Date(e.start);
+    const time = sameDay(s, d) ? fmt({ hour: "2-digit", minute: "2-digit" }).format(s) : "…";
+    return `${time}  ${e.title}`;
+  }
+
+  function openDialog(e, day) {
+    if (!dialog) return;
+    form.reset();
+    form.dataset.id = e ? e.id : "";
+    dialog.querySelector(".dialog-title").textContent = t(e ? "event.edit" : "event.new");
+    dialog.querySelector("[data-action=delete]").hidden = !e;
+    dialog.querySelector(".dialog-error").textContent = "";
+    const s = e ? new Date(e.start) : new Date(day.getFullYear(), day.getMonth(), day.getDate(), 9, 0);
+    const en = e ? new Date(e.end) : new Date(s.getTime() + 3600000);
+    form.elements.title.value = e ? e.title : "";
+    form.elements.location.value = e ? e.location : "";
+    form.elements.notes.value = e ? e.notes : "";
+    form.elements.allDay.checked = e ? e.allDay : false;
+    if (e && e.allDay) {
+      form.elements.date.value = utcKey(s);
+      form.elements.endDate.value = utcKey(new Date(en.getTime() - 86400000));
+      form.elements.start.value = "09:00";
+      form.elements.end.value = "10:00";
+    } else {
+      form.elements.date.value = dateKey(s);
+      form.elements.endDate.value = dateKey(en);
+      form.elements.start.value = timeValue(s);
+      form.elements.end.value = timeValue(en);
+    }
+    syncAllDay();
+    dialog.showModal();
+    form.elements.title.focus();
+  }
+
+  function syncAllDay() {
+    const allDay = form.elements.allDay.checked;
+    form.querySelectorAll(".time-only").forEach((n) => (n.hidden = allDay));
+  }
+
+  function readForm() {
+    const [y, m, d] = form.elements.date.value.split("-").map(Number);
+    const [y2, m2, d2] = (form.elements.endDate.value || form.elements.date.value).split("-").map(Number);
+    let start, end;
+    if (form.elements.allDay.checked) {
+      start = new Date(Date.UTC(y, m - 1, d));
+      end = new Date(Date.UTC(y2, m2 - 1, d2 + 1));
+    } else {
+      const [sh, sm] = form.elements.start.value.split(":").map(Number);
+      const [eh, em] = form.elements.end.value.split(":").map(Number);
+      start = new Date(y, m - 1, d, sh, sm);
+      end = new Date(y2, m2 - 1, d2, eh, em);
+    }
+    return {
+      title: form.elements.title.value,
+      location: form.elements.location.value,
+      notes: form.elements.notes.value,
+      allDay: form.elements.allDay.checked,
+      start: start.toISOString(),
+      end: end.toISOString(),
+    };
+  }
+
+  if (form) {
+    form.elements.allDay.addEventListener("change", syncAllDay);
+    form.elements.date.addEventListener("change", () => {
+      if (!form.elements.endDate.value || form.elements.endDate.value < form.elements.date.value) form.elements.endDate.value = form.elements.date.value;
+    });
+    form.addEventListener("submit", async (ev) => {
+      if (ev.submitter && ev.submitter.value === "cancel") return;
+      ev.preventDefault();
+      const id = form.dataset.id;
+      try {
+        await api(id ? "PUT" : "POST", id ? `/api/events/${id}` : "/api/events", readForm());
+        dialog.close();
+        await loadWeek();
+        render(false);
+      } catch (err) {
+        dialog.querySelector(".dialog-error").textContent = `${t("event.error")} ${err.message}`;
+      }
+    });
+    dialog.querySelector("[data-action=delete]").addEventListener("click", async () => {
+      const id = form.dataset.id;
+      if (!id) return;
+      try {
+        await api("DELETE", `/api/events/${id}`);
+        dialog.close();
+        await loadWeek();
+        render(false);
+      } catch (err) {
+        dialog.querySelector(".dialog-error").textContent = `${t("event.error")} ${err.message}`;
+      }
+    });
+  }
+
   function dayBlock(d) {
     const today = sameDay(d, new Date());
     const dow = d.getDay();
     const weekend = dow === (weekStart + 5) % 7 || dow === (weekStart + 6) % 7;
-    return el(
+    const list = eventsOn(d);
+    const items = list.length
+      ? list.map((e) =>
+          el("button", { type: "button", class: `event${e.allDay ? " all-day" : ""}`, title: e.location || e.title,
+            onclick: (ev) => { ev.stopPropagation(); openDialog(e); } }, eventLabel(e, d)))
+      : [el("div", { class: "day-empty" }, t("calendar.empty"))];
+    const block = el(
       "div",
       { class: `day${today ? " today" : ""}${weekend ? " weekend" : ""}` },
       el(
         "div",
         { class: "day-head" },
         el("span", { class: "day-num" }, fmt({ day: "numeric" }).format(d)),
-        el("span", { class: "day-name" }, fmt({ weekday: "long" }).format(d))
+        el("span", { class: "day-name" }, fmt({ weekday: "long" }).format(d)),
+        eventsLoaded
+          ? el("button", { type: "button", class: "day-add", "aria-label": t("event.new"), title: t("event.new"),
+              onclick: (ev) => { ev.stopPropagation(); openDialog(null, d); } }, "+")
+          : ""
       ),
-      el("div", { class: "day-empty" }, t("calendar.empty"))
+      el("div", { class: "day-events" }, ...items)
     );
+    if (eventsLoaded) block.addEventListener("dblclick", () => openDialog(null, d));
+    return block;
   }
 
   function renderCalendar() {
@@ -110,10 +270,10 @@
       "div",
       { class: "nav" },
       el("button", { type: "button", "aria-label": t("calendar.prev"), title: t("calendar.prev"),
-        onclick: () => { weekAnchor = addDays(weekAnchor, -7); render(true); } }, rtl ? "›" : "‹"),
-      el("button", { type: "button", onclick: () => { weekAnchor = startOfWeek(new Date()); render(true); } }, t("calendar.today")),
+        onclick: () => goWeek(-7) }, rtl ? "›" : "‹"),
+      el("button", { type: "button", onclick: () => goWeek(0) }, t("calendar.today")),
       el("button", { type: "button", "aria-label": t("calendar.next"), title: t("calendar.next"),
-        onclick: () => { weekAnchor = addDays(weekAnchor, 7); render(true); } }, rtl ? "‹" : "›")
+        onclick: () => goWeek(7) }, rtl ? "‹" : "›")
     );
 
     pageStart.replaceChildren(
@@ -124,6 +284,12 @@
       el("header", { class: "page-head" }, el("h2", {}, t("tab.calendar")), nav),
       el("div", { class: "days" }, ...days.slice(3).map(dayBlock))
     );
+  }
+
+  async function goWeek(delta) {
+    weekAnchor = delta === 0 ? startOfWeek(new Date()) : addDays(weekAnchor, delta);
+    await loadWeek();
+    render(true);
   }
 
   function renderPlanner() {
@@ -189,13 +355,15 @@
   // Bild-auf/-ab blättert in der Kalenderwoche.
   document.addEventListener("keydown", (e) => {
     if (section !== "calendar" || e.target.closest("input, textarea, select")) return;
-    if (e.key === "PageDown") { weekAnchor = addDays(weekAnchor, 7); render(true); }
-    if (e.key === "PageUp") { weekAnchor = addDays(weekAnchor, -7); render(true); }
+    if (dialog && dialog.open) return;
+    if (e.key === "PageDown") goWeek(7);
+    if (e.key === "PageUp") goWeek(-7);
   });
 
   fetch(`/api/messages/${encodeURIComponent(lang)}`)
     .then((r) => r.json())
     .then((data) => { messages = data.messages || {}; })
     .catch(() => {})
+    .then(loadWeek)
     .finally(() => render(false));
 })();

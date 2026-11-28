@@ -11,7 +11,8 @@
 -- „noch nicht übertragen“. Gelöscht wird nur weich (deleted_at), damit die
 -- Löschung beim nächsten Abgleich zu Google übertragen werden kann.
 --
--- Zeiten als Text im Format RFC 3339 in UTC, ganztägige Daten als YYYY-MM-DD.
+-- Zeitpunkte als Text in UTC, immer im Format YYYY-MM-DDTHH:MM:SSZ (vergleichbar
+-- als Text). Reine Tagesangaben (Fälligkeit, Planer) als YYYY-MM-DD.
 
 CREATE TABLE users (
     id            INTEGER PRIMARY KEY,

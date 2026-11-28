@@ -1,5 +1,9 @@
 {
-  "meta": { "name": "Deutsch", "dir": "ltr", "weekStart": 1 },
+  "meta": {
+    "name": "Deutsch",
+    "dir": "ltr",
+    "weekStart": 1
+  },
   "messages": {
     "app.title": "LetsOrganize",
     "app.tagline": "Dein Organizer im Ringbuch",
@@ -18,6 +22,20 @@
     "calendar.today": "Heute",
     "calendar.empty": "Keine Termine",
     "section.soon": "Dieser Bereich folgt in einer späteren Phase.",
-    "footer.license": "Freie Software unter der GNU GPL 3.0"
+    "footer.license": "Freie Software unter der GNU GPL 3.0",
+    "event.new": "Neuer Termin",
+    "event.edit": "Termin bearbeiten",
+    "event.title": "Betreff",
+    "event.allDay": "Ganztägig",
+    "event.date": "Beginn",
+    "event.endDate": "Ende",
+    "event.start": "Uhrzeit",
+    "event.end": "Uhrzeit",
+    "event.location": "Ort",
+    "event.notes": "Notiz",
+    "event.save": "Speichern",
+    "event.cancel": "Abbrechen",
+    "event.delete": "Löschen",
+    "event.error": "Speichern nicht möglich:"
   }
 }

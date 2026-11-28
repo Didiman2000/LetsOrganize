@@ -5,6 +5,7 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"html/template"
@@ -36,6 +37,8 @@ type Server struct {
 	themes *themes.Registry
 	index  *template.Template
 	mux    *http.ServeMux
+
+	localUserID int64
 }
 
 const (
@@ -81,6 +84,15 @@ func New(cfg Config) (*Server, error) {
 	s.mux.HandleFunc("GET /api/themes", s.handleThemes)
 	s.mux.HandleFunc("GET /api/themes/{id}", s.handleTheme)
 	s.mux.HandleFunc("GET /api/status", s.handleStatus)
+
+	if cfg.Store != nil {
+		u, err := cfg.Store.EnsureLocalUser(context.Background())
+		if err != nil {
+			return nil, err
+		}
+		s.localUserID = u.ID
+		s.routesEvents()
+	}
 	return s, nil
 }
 

@@ -51,6 +51,31 @@
     </div>
   </main>
 
+  <dialog class="event-dialog" id="event-dialog">
+    <form method="dialog" novalidate>
+      <h2 class="dialog-title"></h2>
+      <label class="wide">{{t .Lang "event.title"}}<input name="title" required maxlength="500" autocomplete="off"></label>
+      <label class="check"><input type="checkbox" name="allDay"> {{t .Lang "event.allDay"}}</label>
+      <div class="row">
+        <label>{{t .Lang "event.date"}}<input type="date" name="date" required></label>
+        <label class="time-only">{{t .Lang "event.start"}}<input type="time" name="start"></label>
+      </div>
+      <div class="row">
+        <label>{{t .Lang "event.endDate"}}<input type="date" name="endDate"></label>
+        <label class="time-only">{{t .Lang "event.end"}}<input type="time" name="end"></label>
+      </div>
+      <label class="wide">{{t .Lang "event.location"}}<input name="location" maxlength="500" autocomplete="off"></label>
+      <label class="wide">{{t .Lang "event.notes"}}<textarea name="notes" rows="3" maxlength="20000"></textarea></label>
+      <p class="dialog-error" role="alert"></p>
+      <div class="buttons">
+        <button type="button" class="danger" data-action="delete">{{t .Lang "event.delete"}}</button>
+        <span class="spacer"></span>
+        <button type="submit" value="cancel" formnovalidate>{{t .Lang "event.cancel"}}</button>
+        <button type="submit" value="save" class="primary">{{t .Lang "event.save"}}</button>
+      </div>
+    </form>
+  </dialog>
+
   <footer class="footer">{{t .Lang "footer.license"}}</footer>
 </body>
 </html>

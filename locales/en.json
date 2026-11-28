@@ -1,5 +1,9 @@
 {
-  "meta": { "name": "English", "dir": "ltr", "weekStart": 1 },
+  "meta": {
+    "name": "English",
+    "dir": "ltr",
+    "weekStart": 1
+  },
   "messages": {
     "app.title": "LetsOrganize",
     "app.tagline": "Your organizer in a ring binder",
@@ -18,6 +22,20 @@
     "calendar.today": "Today",
     "calendar.empty": "No appointments",
     "section.soon": "This section is coming in a later phase.",
-    "footer.license": "Free software under the GNU GPL 3.0"
+    "footer.license": "Free software under the GNU GPL 3.0",
+    "event.new": "New appointment",
+    "event.edit": "Edit appointment",
+    "event.title": "Subject",
+    "event.allDay": "All day",
+    "event.date": "Start",
+    "event.endDate": "End",
+    "event.start": "Time",
+    "event.end": "Time",
+    "event.location": "Location",
+    "event.notes": "Notes",
+    "event.save": "Save",
+    "event.cancel": "Cancel",
+    "event.delete": "Delete",
+    "event.error": "Could not save:"
   }
 }

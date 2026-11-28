@@ -341,6 +341,90 @@ body[data-tab-shape="notched"] .tab { border-start-end-radius: 14px 4px; border-
 .planner .d.we { background: color-mix(in srgb, var(--section-color) 12%, var(--lo-color-paper)); }
 .planner .d.x { background: color-mix(in srgb, var(--lo-color-line) 55%, var(--lo-color-paper)); }
 
+/* ---------- Termine ---------- */
+
+.day-head .day-add {
+  margin-inline-start: auto;
+  inline-size: 24px; block-size: 24px;
+  padding: 0;
+  border: 1px solid var(--lo-color-paper-edge);
+  border-radius: 50%;
+  background: var(--lo-color-paper);
+  color: var(--section-color, var(--lo-color-accent));
+  font-size: 17px; line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.day:hover .day-add, .day-add:focus-visible { opacity: 1; }
+.day-events { display: flex; flex-direction: column; overflow: hidden; }
+.event {
+  display: block;
+  inline-size: 100%;
+  padding-block: 0;
+  padding-inline: 2px;
+  border: 0;
+  background: none;
+  color: var(--lo-color-ink);
+  font-family: var(--lo-font-hand);
+  font-size: 15px;
+  line-height: 26px;
+  text-align: start;
+  white-space: pre;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+.event:hover, .event:focus-visible { color: var(--section-color, var(--lo-color-accent)); outline: none; text-decoration: underline; }
+.event.all-day {
+  margin-block: 1px;
+  border-radius: 3px;
+  line-height: 22px;
+  background: color-mix(in srgb, var(--section-color, var(--lo-color-accent)) 18%, var(--lo-color-paper));
+}
+
+.event-dialog {
+  inline-size: min(460px, calc(100vw - 32px));
+  padding: 0;
+  border: 1px solid var(--lo-color-paper-edge);
+  border-block-start: 6px solid var(--lo-tab-calendar);
+  border-radius: 8px;
+  background: var(--lo-color-paper);
+  color: var(--lo-color-ink);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
+}
+.event-dialog::backdrop { background: rgba(0, 0, 0, 0.45); }
+.event-dialog form { display: flex; flex-direction: column; gap: 12px; padding: 20px; }
+.event-dialog h2 { margin: 0; font-family: var(--lo-font-heading); font-weight: normal; color: var(--lo-tab-calendar); }
+.event-dialog label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--lo-color-ink-soft); }
+.event-dialog label.check { flex-direction: row; align-items: center; gap: 8px; color: var(--lo-color-ink); font-size: 14px; }
+.event-dialog .row { display: flex; gap: 12px; }
+.event-dialog .row > label { flex: 1; }
+.event-dialog [hidden] { display: none; }
+.event-dialog input:not([type=checkbox]), .event-dialog textarea {
+  font: inherit; font-size: 15px;
+  padding-block: 6px; padding-inline: 8px;
+  border: 1px solid var(--lo-color-line);
+  border-radius: 4px;
+  background: #fff;
+  color: var(--lo-color-ink);
+}
+.event-dialog input:focus, .event-dialog textarea:focus { outline: 2px solid var(--lo-tab-calendar); outline-offset: -1px; }
+.dialog-error { margin: 0; min-block-size: 1em; color: var(--lo-color-accent); font-size: 14px; }
+.buttons { display: flex; gap: 8px; align-items: center; }
+.buttons .spacer { flex: 1; }
+.buttons button {
+  font: inherit; font-size: 14px;
+  padding-block: 6px; padding-inline: 14px;
+  border: 1px solid var(--lo-color-line);
+  border-radius: 4px;
+  background: var(--lo-color-paper);
+  color: var(--lo-color-ink);
+  cursor: pointer;
+}
+.buttons .primary { background: var(--lo-tab-calendar); border-color: var(--lo-tab-calendar); color: #fff; }
+.buttons .danger { color: var(--lo-color-accent); }
+
 /* ---------- Rechts nach links ---------- */
 
 [dir="rtl"] .page-start::after { background: linear-gradient(to left,  transparent, rgba(0, 0, 0, 0.13)); }

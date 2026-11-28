@@ -27,7 +27,7 @@ Persönlicher Organizer im Browser mit der Optik eines hochwertigen Leder-Ringbu
 5. Planer – Jahresübersicht mit farbigen Markierungen
 6. Jahrestage – automatisch aus Geburtstagen der Kontakte, plus eigene
 
-Später: Anrufe, Gmail-Anbindung, Verknüpfungen zwischen Einträgen, Mehrbenutzer-Server.
+MCP-Schnittstelle für externe KI-Agenten (siehe Phase 7). Später: Anrufe, Gmail-Anbindung, Verknüpfungen zwischen Einträgen, Mehrbenutzer-Server.
 
 ## Phasen
 
@@ -56,7 +56,8 @@ Später: Anrufe, Gmail-Anbindung, Verknüpfungen zwischen Einträgen, Mehrbenutz
 - [ ] Tastaturbedienung und Druckansicht
 
 ### Phase 3 – Register ohne Google
-- [ ] Kalender: Termine anlegen, verschieben, Wiederholungen, Erinnerungen
+- [x] Kalender: Termine anlegen, ändern, löschen (Wochenansicht, ganztägig, Schnittstelle /api/events mit CSRF-Schutz)
+- [ ] Kalender: Wiederholungen, Erinnerungen, Verschieben per Ziehen
 - [ ] Aufgaben: Fälligkeit, Priorität, erledigt
 - [ ] Adressen: Register A–Z (je Sprache passendes Alphabet), Suche
 - [ ] Notizen, Planer, Jahrestage
@@ -80,6 +81,14 @@ Später: Anrufe, Gmail-Anbindung, Verknüpfungen zwischen Einträgen, Mehrbenutz
 - [ ] Tests im Alltag, Fehler beheben
 - [ ] Anleitung für den eigenen Google-Zugang
 - [ ] Erstes Release auf GitHub
+
+### Phase 7 – MCP-Schnittstelle für KI-Agenten
+- [ ] MCP-Server im Programm (Streamable HTTP), lokal und im Container nutzbar
+- [ ] Werkzeuge zum Lesen: Termine im Zeitraum, offene Aufgaben, Kontakte suchen, Notizen, Jahrestage, Planer
+- [ ] Werkzeuge zum Schreiben: Termine und Aufgaben anlegen, ändern, erledigen, löschen; Notizen anlegen
+- [ ] Zugriff nur mit eigenem Token je Agent, Rechte getrennt nach Lesen und Schreiben sowie nach Bereich
+- [ ] Protokoll aller Änderungen durch Agenten; Änderungen laufen über denselben Google-Abgleich
+- [ ] Anleitung zur Einbindung in Claude und andere MCP-Clients
 
 ## Offene Fragen
 
