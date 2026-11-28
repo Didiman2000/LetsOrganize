@@ -58,7 +58,8 @@ MCP-Schnittstelle für externe KI-Agenten (siehe Phase 7). Später: Anrufe, Gmai
 ### Phase 3 – Register ohne Google
 - [x] Kalender: Termine anlegen, ändern, löschen (Wochenansicht, ganztägig, Schnittstelle /api/events mit CSRF-Schutz)
 - [ ] Kalender: Wiederholungen, Erinnerungen, Verschieben per Ziehen
-- [ ] Aufgaben: Fälligkeit, Priorität, erledigt
+- [x] Aufgaben: anlegen per Schnell-Eingabe, abhaken, Fälligkeit, Priorität, Notiz, erledigte Liste (Schnittstelle /api/tasks)
+- [ ] Aufgaben: Reihenfolge per Ziehen, Kategorien
 - [ ] Adressen: Register A–Z (je Sprache passendes Alphabet), Suche
 - [ ] Notizen, Planer, Jahrestage
 

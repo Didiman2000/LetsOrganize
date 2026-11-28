@@ -292,6 +292,156 @@
     render(true);
   }
 
+  // ---------- Aufgaben ----------
+
+  let tasksOpen = [];
+  let tasksDone = [];
+  let tasksLoaded = false;
+  const taskDialog = document.getElementById("task-dialog");
+  const taskForm = taskDialog && taskDialog.querySelector("form");
+
+  async function loadTasks() {
+    try {
+      [tasksOpen, tasksDone] = await Promise.all([
+        api("GET", "/api/tasks?status=open"),
+        api("GET", "/api/tasks?status=done&limit=30"),
+      ]);
+      tasksLoaded = true;
+    } catch (_) {
+      tasksOpen = [];
+      tasksDone = [];
+      tasksLoaded = false;
+    }
+  }
+
+  async function refreshTasks() {
+    await loadTasks();
+    if (section === "todo") render(false);
+  }
+
+  function dueInfo(due) {
+    if (!due) return null;
+    const [y, m, d] = due.split("-").map(Number);
+    const date = new Date(y, m - 1, d);
+    const today = new Date();
+    const t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const days = Math.round((date - t0) / 86400000);
+    let cls = "";
+    if (days < 0) cls = "overdue";
+    else if (days === 0) cls = "due-today";
+    const text = days === 0 ? t("calendar.today") : fmt({ day: "numeric", month: "short" }).format(date);
+    return { cls, text, title: fmt({ dateStyle: "full" }).format(date) };
+  }
+
+  function taskRow(task) {
+    const box = el("input", { type: "checkbox", "aria-label": t(task.done ? "task.reopen" : "task.complete") });
+    box.checked = task.done;
+    box.addEventListener("change", async () => {
+      box.disabled = true;
+      try {
+        await api("PUT", `/api/tasks/${task.id}/done`, { done: box.checked });
+      } catch (_) {
+        box.checked = !box.checked;
+      }
+      refreshTasks();
+    });
+    const due = dueInfo(task.due);
+    return el(
+      "li",
+      { class: `task${task.done ? " done" : ""} prio-${task.priority}` },
+      box,
+      el("button", { type: "button", class: "task-title", title: task.notes || task.title, onclick: () => openTaskDialog(task) },
+        task.priority > 0 ? el("span", { class: "prio", "aria-label": t(`task.priority${task.priority}`) }, "!".repeat(task.priority)) : "",
+        task.title),
+      due ? el("span", { class: `due ${due.cls}`, title: due.title }, due.text) : ""
+    );
+  }
+
+  function renderTodo() {
+    const add = el("input", { class: "task-add", type: "text", maxlength: "500", placeholder: t("task.addPlaceholder"), "aria-label": t("task.new") });
+    add.addEventListener("keydown", async (ev) => {
+      if (ev.key !== "Enter" || !add.value.trim()) return;
+      ev.preventDefault();
+      const title = add.value;
+      add.value = "";
+      try {
+        await api("POST", "/api/tasks", { title });
+      } catch (_) {
+        add.value = title;
+      }
+      await refreshTasks();
+      const again = pageStart.querySelector(".task-add");
+      if (again) again.focus();
+    });
+    const openList = tasksOpen.length
+      ? el("ul", { class: "tasks" }, ...tasksOpen.map(taskRow))
+      : el("p", { class: "soon" }, t(tasksLoaded ? "task.noneOpen" : "section.soon"));
+    pageStart.replaceChildren(
+      el("header", { class: "page-head" }, el("h1", {}, t("tab.todo")),
+        el("span", { class: "meta" }, t("task.openCount", { n: fmtNum.format(tasksOpen.length) }))),
+      tasksLoaded ? add : "",
+      openList
+    );
+    pageEnd.replaceChildren(
+      el("header", { class: "page-head" }, el("h2", {}, t("task.done"))),
+      tasksDone.length ? el("ul", { class: "tasks" }, ...tasksDone.map(taskRow)) : el("p", { class: "soon" }, t("task.noneDone"))
+    );
+  }
+
+  function openTaskDialog(task) {
+    if (!taskDialog) return;
+    taskForm.reset();
+    taskForm.dataset.id = task ? task.id : "";
+    taskDialog.querySelector(".dialog-title").textContent = t(task ? "task.edit" : "task.new");
+    taskDialog.querySelector("[data-action=delete]").hidden = !task;
+    taskDialog.querySelector(".dialog-error").textContent = "";
+    const f = taskForm.elements;
+    f.title.value = task ? task.title : "";
+    f.due.value = task && task.due ? task.due : "";
+    f.priority.value = String(task ? task.priority : 0);
+    f.notes.value = task ? task.notes : "";
+    f.done.checked = task ? task.done : false;
+    taskForm._task = task;
+    taskDialog.showModal();
+    f.title.focus();
+  }
+
+  if (taskForm) {
+    taskForm.addEventListener("submit", async (ev) => {
+      if (ev.submitter && ev.submitter.value === "cancel") return;
+      ev.preventDefault();
+      const f = taskForm.elements;
+      const id = taskForm.dataset.id;
+      const old = taskForm._task;
+      const body = {
+        title: f.title.value,
+        notes: f.notes.value,
+        due: f.due.value || null,
+        priority: Number(f.priority.value),
+        done: f.done.checked,
+        position: old ? old.position : 0,
+      };
+      try {
+        await api(id ? "PUT" : "POST", id ? `/api/tasks/${id}` : "/api/tasks", body);
+        taskDialog.close();
+        refreshTasks();
+      } catch (err) {
+        taskDialog.querySelector(".dialog-error").textContent = `${t("event.error")} ${err.message}`;
+      }
+    });
+    taskDialog.querySelector("[data-action=delete]").addEventListener("click", async () => {
+      const id = taskForm.dataset.id;
+      if (!id) return;
+      try {
+        await api("DELETE", `/api/tasks/${id}`);
+        taskDialog.close();
+        refreshTasks();
+      } catch (err) {
+        taskDialog.querySelector(".dialog-error").textContent = `${t("event.error")} ${err.message}`;
+      }
+    });
+  }
+
   function renderPlanner() {
     const year = weekAnchor.getFullYear();
     const grid = (from, to) => {
@@ -340,7 +490,7 @@
     const tab = tabs.find((b) => b.dataset.tab === section);
     tabs.forEach((b) => b.setAttribute("aria-current", String(b === tab)));
     setPaper(tab ? tab.dataset.paper : "lined");
-    ({ calendar: renderCalendar, planner: renderPlanner, addresses: renderAddresses }[section] || renderGeneric)();
+    ({ calendar: renderCalendar, todo: renderTodo, planner: renderPlanner, addresses: renderAddresses }[section] || renderGeneric)();
     if (animate) turn();
   }
 
@@ -355,7 +505,7 @@
   // Bild-auf/-ab blättert in der Kalenderwoche.
   document.addEventListener("keydown", (e) => {
     if (section !== "calendar" || e.target.closest("input, textarea, select")) return;
-    if (dialog && dialog.open) return;
+    if ((dialog && dialog.open) || (taskDialog && taskDialog.open)) return;
     if (e.key === "PageDown") goWeek(7);
     if (e.key === "PageUp") goWeek(-7);
   });
@@ -364,6 +514,6 @@
     .then((r) => r.json())
     .then((data) => { messages = data.messages || {}; })
     .catch(() => {})
-    .then(loadWeek)
+    .then(() => Promise.all([loadWeek(), loadTasks()]))
     .finally(() => render(false));
 })();

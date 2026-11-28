@@ -92,6 +92,7 @@ func New(cfg Config) (*Server, error) {
 		}
 		s.localUserID = u.ID
 		s.routesEvents()
+		s.routesTasks()
 	}
 	return s, nil
 }

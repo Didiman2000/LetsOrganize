@@ -76,6 +76,31 @@
     </form>
   </dialog>
 
+  <dialog class="event-dialog task-dialog" id="task-dialog">
+    <form method="dialog" novalidate>
+      <h2 class="dialog-title"></h2>
+      <label class="wide">{{t .Lang "task.title"}}<input name="title" required maxlength="500" autocomplete="off"></label>
+      <div class="row">
+        <label>{{t .Lang "task.due"}}<input type="date" name="due"></label>
+        <label>{{t .Lang "task.priority"}}<select name="priority">
+          <option value="0">{{t .Lang "task.priority0"}}</option>
+          <option value="1">{{t .Lang "task.priority1"}}</option>
+          <option value="2">{{t .Lang "task.priority2"}}</option>
+          <option value="3">{{t .Lang "task.priority3"}}</option>
+        </select></label>
+      </div>
+      <label class="check"><input type="checkbox" name="done"> {{t .Lang "task.isDone"}}</label>
+      <label class="wide">{{t .Lang "event.notes"}}<textarea name="notes" rows="3" maxlength="20000"></textarea></label>
+      <p class="dialog-error" role="alert"></p>
+      <div class="buttons">
+        <button type="button" class="danger" data-action="delete">{{t .Lang "event.delete"}}</button>
+        <span class="spacer"></span>
+        <button type="submit" value="cancel" formnovalidate>{{t .Lang "event.cancel"}}</button>
+        <button type="submit" value="save" class="primary">{{t .Lang "event.save"}}</button>
+      </div>
+    </form>
+  </dialog>
+
   <footer class="footer">{{t .Lang "footer.license"}}</footer>
 </body>
 </html>

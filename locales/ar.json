@@ -36,6 +36,23 @@
     "event.save": "حفظ",
     "event.cancel": "إلغاء",
     "event.delete": "حذف",
-    "event.error": "تعذّر الحفظ:"
+    "event.error": "تعذّر الحفظ:",
+    "task.new": "مهمة جديدة",
+    "task.edit": "تعديل المهمة",
+    "task.title": "المهمة",
+    "task.due": "تاريخ الاستحقاق",
+    "task.priority": "الأولوية",
+    "task.priority0": "بلا",
+    "task.priority1": "منخفضة",
+    "task.priority2": "متوسطة",
+    "task.priority3": "عالية",
+    "task.isDone": "منجزة",
+    "task.done": "المنجزة",
+    "task.complete": "وضع علامة منجزة",
+    "task.reopen": "إعادة فتح",
+    "task.addPlaceholder": "اكتب مهمة جديدة واضغط Enter …",
+    "task.openCount": "{n} مفتوحة",
+    "task.noneOpen": "تم إنجاز كل شيء.",
+    "task.noneDone": "لم يُنجز شيء بعد."
   }
 }

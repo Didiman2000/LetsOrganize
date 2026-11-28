@@ -36,6 +36,23 @@
     "event.save": "Save",
     "event.cancel": "Cancel",
     "event.delete": "Delete",
-    "event.error": "Could not save:"
+    "event.error": "Could not save:",
+    "task.new": "New task",
+    "task.edit": "Edit task",
+    "task.title": "Task",
+    "task.due": "Due",
+    "task.priority": "Priority",
+    "task.priority0": "None",
+    "task.priority1": "Low",
+    "task.priority2": "Medium",
+    "task.priority3": "High",
+    "task.isDone": "Done",
+    "task.done": "Done",
+    "task.complete": "Mark as done",
+    "task.reopen": "Reopen",
+    "task.addPlaceholder": "Type a new task and press Enter …",
+    "task.openCount": "{n} open",
+    "task.noneOpen": "All done.",
+    "task.noneDone": "Nothing done yet."
   }
 }

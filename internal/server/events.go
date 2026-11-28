@@ -122,13 +122,7 @@ func (s *Server) handleGetEvent(w http.ResponseWriter, r *http.Request) {
 
 func decodeEvent(w http.ResponseWriter, r *http.Request) (store.Event, bool) {
 	var e store.Event
-	dec := json.NewDecoder(r.Body)
-	dec.DisallowUnknownFields()
-	if err := dec.Decode(&e); err != nil {
-		writeError(w, http.StatusBadRequest, "bad_json", "ungültiges JSON: "+err.Error())
-		return e, false
-	}
-	return e, true
+	return e, decodeJSON(w, r, &e)
 }
 
 func (s *Server) handleCreateEvent(w http.ResponseWriter, r *http.Request) {

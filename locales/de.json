@@ -36,6 +36,23 @@
     "event.save": "Speichern",
     "event.cancel": "Abbrechen",
     "event.delete": "Löschen",
-    "event.error": "Speichern nicht möglich:"
+    "event.error": "Speichern nicht möglich:",
+    "task.new": "Neue Aufgabe",
+    "task.edit": "Aufgabe bearbeiten",
+    "task.title": "Aufgabe",
+    "task.due": "Fällig am",
+    "task.priority": "Priorität",
+    "task.priority0": "Keine",
+    "task.priority1": "Niedrig",
+    "task.priority2": "Mittel",
+    "task.priority3": "Hoch",
+    "task.isDone": "Erledigt",
+    "task.done": "Erledigt",
+    "task.complete": "Als erledigt abhaken",
+    "task.reopen": "Wieder öffnen",
+    "task.addPlaceholder": "Neue Aufgabe eintragen und Enter drücken …",
+    "task.openCount": "{n} offen",
+    "task.noneOpen": "Alles erledigt.",
+    "task.noneDone": "Noch nichts erledigt."
   }
 }

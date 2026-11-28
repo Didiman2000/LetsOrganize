@@ -425,6 +425,55 @@ body[data-tab-shape="notched"] .tab { border-start-end-radius: 14px 4px; border-
 .buttons .primary { background: var(--lo-tab-calendar); border-color: var(--lo-tab-calendar); color: #fff; }
 .buttons .danger { color: var(--lo-color-accent); }
 
+/* ---------- Aufgaben ---------- */
+
+.task-add {
+  position: relative; z-index: 1;
+  inline-size: 100%;
+  margin-block-end: 6px;
+  padding-block: 4px; padding-inline: 2px;
+  border: 0;
+  border-block-end: 1px dashed var(--section-color, var(--lo-color-line));
+  background: transparent;
+  color: var(--lo-color-ink);
+  font-family: var(--lo-font-hand);
+  font-size: 16px;
+  line-height: 20px;
+}
+.task-add:focus { outline: none; border-block-end-style: solid; }
+.task-add::placeholder { color: var(--lo-color-ink-soft); opacity: 0.7; }
+.tasks { position: relative; z-index: 1; list-style: none; margin: 0; padding: 0; }
+.task { display: flex; align-items: center; gap: 8px; block-size: 28px; padding-inline-start: 2px; }
+.task input[type=checkbox] { inline-size: 16px; block-size: 16px; margin: 0; accent-color: var(--section-color, var(--lo-color-accent)); cursor: pointer; }
+.task-title {
+  flex: 1; min-inline-size: 0;
+  padding: 0; border: 0; background: none;
+  color: var(--lo-color-ink);
+  font-family: var(--lo-font-hand); font-size: 16px; text-align: start;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  cursor: pointer;
+}
+.task-title:hover, .task-title:focus-visible { color: var(--section-color, var(--lo-color-accent)); text-decoration: underline; outline: none; }
+.task .prio { margin-inline-end: 6px; color: var(--lo-color-accent); font-family: var(--lo-font-heading); font-weight: bold; }
+.task.done .task-title { color: var(--lo-color-ink-soft); text-decoration: line-through; }
+.task.done .prio { color: var(--lo-color-ink-soft); }
+.due { flex: none; font-size: 13px; color: var(--lo-color-ink-soft); }
+.due.due-today { color: var(--section-color, var(--lo-color-accent)); font-weight: bold; }
+.due.overdue { color: var(--lo-color-accent); font-weight: bold; }
+.task.done .due { color: var(--lo-color-ink-soft); font-weight: normal; }
+.task-dialog { border-block-start-color: var(--lo-tab-todo); }
+.task-dialog h2 { color: var(--lo-tab-todo); }
+.task-dialog .buttons .primary { background: var(--lo-tab-todo); border-color: var(--lo-tab-todo); }
+.task-dialog input:focus, .task-dialog textarea:focus, .task-dialog select:focus { outline-color: var(--lo-tab-todo); }
+.event-dialog select {
+  font: inherit; font-size: 15px;
+  padding-block: 6px; padding-inline: 8px;
+  border: 1px solid var(--lo-color-line);
+  border-radius: 4px;
+  background: #fff;
+  color: var(--lo-color-ink);
+}
+
 /* ---------- Rechts nach links ---------- */
 
 [dir="rtl"] .page-start::after { background: linear-gradient(to left,  transparent, rgba(0, 0, 0, 0.13)); }
