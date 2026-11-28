@@ -35,7 +35,7 @@ MCP-Schnittstelle für externe KI-Agenten (siehe Phase 7). Später: Anrufe, Gmai
 - [x] Name (LetsOrganize), Repository, Lizenz (GPL 3.0)
 - [ ] Alte Organizer-Installation starten (ggf. in einer VM)
 - [ ] Probeexport aller Bereiche als CSV/Text erstellen und Felder dokumentieren
-- [ ] Google-Cloud-Projekt anlegen, Calendar-, People- und Tasks-API aktivieren, OAuth-Client erstellen
+- [ ] Google-Cloud-Projekt anlegen, Calendar-, People- und Tasks-API aktivieren, OAuth-Client erstellen – Anleitung: [GOOGLE-EINRICHTUNG.md](GOOGLE-EINRICHTUNG.md)
 
 ### Phase 1 – Grundgerüst
 - [x] Go-Projekt mit Webserver, eingebettete Oberfläche, Sicherheits-Header (CSP)

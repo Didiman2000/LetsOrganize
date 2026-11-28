@@ -16,3 +16,7 @@
 .idea/
 .DS_Store
 Thumbs.db
+
+# Google-Zugangsdaten (siehe docs/GOOGLE-EINRICHTUNG.md)
+google-client*.json
+client_secret*.json

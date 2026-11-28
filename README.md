@@ -49,6 +49,10 @@ Tests:
 go test ./...
 ```
 
+## Google-Abgleich
+
+Der Abgleich mit Google Kalender, Kontakte und Aufgaben ist in Arbeit. Den nötigen eigenen Google-Zugang beschreibt [docs/GOOGLE-EINRICHTUNG.md](docs/GOOGLE-EINRICHTUNG.md).
+
 ## Themen
 
 Ein Thema ist ein Ordner mit einer `theme.json`. Mitgeliefert werden `themes/leder-ringbuch` (Standard) und `themes/nachtblau-leinen`. Eigene Themen kommen in den Unterordner `themes` des Datenordners; ein eigenes Thema mit gleicher ID ersetzt das mitgelieferte.
