@@ -610,6 +610,15 @@ body[data-tab-shape="notched"] .tab { border-start-end-radius: 14px 4px; border-
 .anniversary-dialog h2 { color: var(--lo-tab-anniversaries); }
 .anniversary-dialog .buttons .primary { background: var(--lo-tab-anniversaries); border-color: var(--lo-tab-anniversaries); }
 
+/* ---------- Wiederholung ---------- */
+
+.weekdays { display: flex; flex-wrap: wrap; gap: 6px; }
+.weekdays label { flex-direction: row; align-items: center; gap: 4px; padding-block: 3px; padding-inline: 8px; border: 1px solid var(--lo-color-line); border-radius: 12px; color: var(--lo-color-ink); font-size: 13px; cursor: pointer; }
+.weekdays label:has(input:checked) { background: color-mix(in srgb, var(--lo-tab-calendar) 15%, var(--lo-color-paper)); border-color: var(--lo-tab-calendar); }
+.weekdays input { margin: 0; accent-color: var(--lo-tab-calendar); }
+.series-hint { margin: 0; font-size: 13px; color: var(--lo-color-ink-soft); font-style: italic; }
+.event .repeat-mark { margin-inline-start: 4px; color: var(--lo-color-ink-soft); font-family: var(--lo-font-body); font-size: 12px; }
+
 /* ---------- Rechts nach links ---------- */
 
 [dir="rtl"] .page-start::after { background: linear-gradient(to left,  transparent, rgba(0, 0, 0, 0.13)); }

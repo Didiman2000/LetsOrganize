@@ -157,12 +157,25 @@ func (s *Server) handleUpdateEvent(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, updated)
 }
 
+// DELETE /api/events/{id} löscht den Termin bzw. die ganze Serie.
+// DELETE /api/events/{id}?occurrence=<RFC 3339> löscht nur dieses Vorkommen einer Serie.
 func (s *Server) handleDeleteEvent(w http.ResponseWriter, r *http.Request) {
 	id, ok := pathID(w, r)
 	if !ok {
 		return
 	}
-	if err := s.cfg.Store.DeleteEvent(r.Context(), s.userID(r), id); err != nil {
+	var err error
+	if occ := r.URL.Query().Get("occurrence"); occ != "" {
+		t, perr := time.Parse(time.RFC3339, occ)
+		if perr != nil {
+			writeError(w, http.StatusBadRequest, "bad_occurrence", "occurrence als RFC 3339 angeben")
+			return
+		}
+		err = s.cfg.Store.DeleteOccurrence(r.Context(), s.userID(r), id, t)
+	} else {
+		err = s.cfg.Store.DeleteEvent(r.Context(), s.userID(r), id)
+	}
+	if err != nil {
 		s.storeError(w, err)
 		return
 	}

@@ -64,11 +64,34 @@
         <label>{{t .Lang "event.endDate"}}<input type="date" name="endDate"></label>
         <label class="time-only">{{t .Lang "event.end"}}<input type="time" name="end"></label>
       </div>
+      <div class="row">
+        <label>{{t .Lang "repeat.label"}}<select name="repeat">
+          <option value="">{{t .Lang "repeat.none"}}</option>
+          <option value="FREQ=DAILY">{{t .Lang "repeat.daily"}}</option>
+          <option value="FREQ=WEEKLY">{{t .Lang "repeat.weekly"}}</option>
+          <option value="FREQ=WEEKLY;INTERVAL=2">{{t .Lang "repeat.biweekly"}}</option>
+          <option value="FREQ=MONTHLY">{{t .Lang "repeat.monthly"}}</option>
+          <option value="FREQ=YEARLY">{{t .Lang "repeat.yearly"}}</option>
+          <option value="custom" hidden>{{t .Lang "repeat.custom"}}</option>
+        </select></label>
+        <label class="repeat-only">{{t .Lang "repeat.ends"}}<select name="repeatEnd">
+          <option value="never">{{t .Lang "repeat.never"}}</option>
+          <option value="until">{{t .Lang "repeat.until"}}</option>
+          <option value="count">{{t .Lang "repeat.count"}}</option>
+        </select></label>
+      </div>
+      <div class="weekdays repeat-weekly" role="group" aria-label="{{t .Lang "repeat.weekdays"}}"></div>
+      <div class="row repeat-only">
+        <label class="repeat-until">{{t .Lang "repeat.untilDate"}}<input type="date" name="until"></label>
+        <label class="repeat-count">{{t .Lang "repeat.times"}}<input type="number" name="count" min="1" max="10000"></label>
+      </div>
+      <p class="series-hint" hidden>{{t .Lang "repeat.seriesHint"}}</p>
       <label class="wide">{{t .Lang "event.location"}}<input name="location" maxlength="500" autocomplete="off"></label>
       <label class="wide">{{t .Lang "event.notes"}}<textarea name="notes" rows="3" maxlength="20000"></textarea></label>
       <p class="dialog-error" role="alert"></p>
       <div class="buttons">
         <button type="button" class="danger" data-action="delete">{{t .Lang "event.delete"}}</button>
+        <button type="button" class="danger" data-action="delete-occurrence" hidden>{{t .Lang "repeat.deleteOne"}}</button>
         <span class="spacer"></span>
         <button type="submit" value="cancel" formnovalidate>{{t .Lang "event.cancel"}}</button>
         <button type="submit" value="save" class="primary">{{t .Lang "event.save"}}</button>

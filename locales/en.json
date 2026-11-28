@@ -101,6 +101,25 @@
     "ann.day": "Day",
     "ann.month": "Month",
     "ann.year": "Year (optional)",
-    "ann.age": "{n} years"
+    "ann.age": "{n} years",
+    "repeat.label": "Repeat",
+    "repeat.none": "None",
+    "repeat.daily": "Daily",
+    "repeat.weekly": "Weekly",
+    "repeat.biweekly": "Every two weeks",
+    "repeat.monthly": "Monthly",
+    "repeat.yearly": "Yearly",
+    "repeat.custom": "Custom rule",
+    "repeat.ends": "Ends",
+    "repeat.never": "Never",
+    "repeat.until": "On date",
+    "repeat.count": "After count",
+    "repeat.untilDate": "Last day",
+    "repeat.times": "Number of times",
+    "repeat.weekdays": "Weekdays",
+    "repeat.seriesHint": "Changes apply to the whole series.",
+    "repeat.deleteOne": "Delete only this one",
+    "repeat.deleteAll": "Delete whole series",
+    "repeat.symbol": "Series"
   }
 }

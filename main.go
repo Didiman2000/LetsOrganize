@@ -16,6 +16,9 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+	// Zeitzonen-Datenbank einbetten: Windows bringt keine mit, ohne sie
+	// ließen sich Serien nicht in Europe/Berlin usw. berechnen.
+	_ "time/tzdata"
 
 	"github.com/Didiman2000/LetsOrganize/internal/server"
 	"github.com/Didiman2000/LetsOrganize/internal/store"

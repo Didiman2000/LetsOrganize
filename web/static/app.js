@@ -143,12 +143,104 @@
     return `${time}  ${e.title}`;
   }
 
-  function openDialog(e, day) {
+  // ---------- Wiederholung ----------
+
+  const dayCodes = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"]; // Montag = 0
+  const weekdayBox = dialog && dialog.querySelector(".weekdays");
+  if (weekdayBox) {
+    // Anzeige ab dem Wochenbeginn der Sprache, z. B. Samstag im Arabischen.
+    const first = (weekStart + 6) % 7;
+    for (let i = 0; i < 7; i++) {
+      const idx = (first + i) % 7;
+      const label = fmt({ weekday: "short" }).format(new Date(2026, 10, 30 + idx)); // 30.11.2026 ist ein Montag
+      weekdayBox.append(el("label", {}, el("input", { type: "checkbox", name: "byday", value: dayCodes[idx] }), label));
+    }
+  }
+
+  function parseRule(rule) {
+    const out = { freq: "", interval: 1, byday: [], count: 0, until: "" };
+    for (const part of (rule || "").split(";")) {
+      const [k, v] = part.split("=");
+      if (k === "FREQ") out.freq = v;
+      else if (k === "INTERVAL") out.interval = Number(v);
+      else if (k === "BYDAY") out.byday = v.split(",");
+      else if (k === "COUNT") out.count = Number(v);
+      else if (k === "UNTIL") out.until = `${v.slice(0, 4)}-${v.slice(4, 6)}-${v.slice(6, 8)}`;
+      else if (k) out.other = true;
+    }
+    return out;
+  }
+
+  function fillRepeat(rule, start) {
+    const f = form.elements;
+    const custom = f.repeat.querySelector("option[value=custom]");
+    custom.hidden = true;
+    form.dataset.customRule = "";
+    f.repeatEnd.value = "never";
+    f.until.value = "";
+    f.count.value = "";
+    const startCode = dayCodes[(start.getDay() + 6) % 7];
+    form.querySelectorAll("input[name=byday]").forEach((c) => (c.checked = c.value === startCode));
+    if (!rule) {
+      f.repeat.value = "";
+      return;
+    }
+    const r = parseRule(rule);
+    const preset = r.freq === "WEEKLY" && r.interval === 2 ? "FREQ=WEEKLY;INTERVAL=2" : r.interval === 1 ? `FREQ=${r.freq}` : "";
+    if (!preset || r.other || (r.byday.length && r.freq !== "WEEKLY")) {
+      custom.hidden = false;
+      f.repeat.value = "custom";
+      form.dataset.customRule = rule;
+    } else {
+      f.repeat.value = preset;
+    }
+    if (r.byday.length) form.querySelectorAll("input[name=byday]").forEach((c) => (c.checked = r.byday.includes(c.value)));
+    if (r.count) { f.repeatEnd.value = "count"; f.count.value = r.count; }
+    if (r.until) { f.repeatEnd.value = "until"; f.until.value = r.until; }
+  }
+
+  function syncRepeat() {
+    const f = form.elements;
+    const on = f.repeat.value !== "";
+    const editable = on && f.repeat.value !== "custom";
+    form.querySelectorAll(".repeat-only").forEach((n) => (n.hidden = !editable));
+    form.querySelector(".repeat-weekly").hidden = !(editable && f.repeat.value.startsWith("FREQ=WEEKLY"));
+    form.querySelector(".repeat-until").hidden = f.repeatEnd.value !== "until";
+    form.querySelector(".repeat-count").hidden = f.repeatEnd.value !== "count";
+  }
+
+  function buildRule() {
+    const f = form.elements;
+    if (!f.repeat.value) return "";
+    if (f.repeat.value === "custom") return form.dataset.customRule || "";
+    const parts = [f.repeat.value];
+    if (f.repeat.value.startsWith("FREQ=WEEKLY")) {
+      const days = Array.from(form.querySelectorAll("input[name=byday]:checked")).map((c) => c.value);
+      if (days.length) parts.push(`BYDAY=${dayCodes.filter((c) => days.includes(c)).join(",")}`);
+    }
+    if (f.repeatEnd.value === "count" && Number(f.count.value) > 0) parts.push(`COUNT=${Number(f.count.value)}`);
+    if (f.repeatEnd.value === "until" && f.until.value) parts.push(`UNTIL=${f.until.value.replace(/-/g, "")}`);
+    return parts.join(";");
+  }
+
+  async function openDialog(e, day) {
     if (!dialog) return;
+    // Bei einem Vorkommen einer Serie wird die Serie selbst bearbeitet.
+    let occurrence = "";
+    if (e && e.seriesStart) {
+      occurrence = e.start;
+      try { e = await api("GET", `/api/events/${e.id}`); } catch (_) {}
+    }
     form.reset();
     form.dataset.id = e ? e.id : "";
+    form.dataset.occurrence = occurrence;
+    const recurring = !!(e && e.rrule);
     dialog.querySelector(".dialog-title").textContent = t(e ? "event.edit" : "event.new");
-    dialog.querySelector("[data-action=delete]").hidden = !e;
+    const del = dialog.querySelector("[data-action=delete]");
+    del.hidden = !e;
+    del.textContent = t(recurring ? "repeat.deleteAll" : "event.delete");
+    dialog.querySelector("[data-action=delete-occurrence]").hidden = !occurrence;
+    dialog.querySelector(".series-hint").hidden = !recurring;
     dialog.querySelector(".dialog-error").textContent = "";
     const s = e ? new Date(e.start) : new Date(day.getFullYear(), day.getMonth(), day.getDate(), 9, 0);
     const en = e ? new Date(e.end) : new Date(s.getTime() + 3600000);
@@ -167,7 +259,9 @@
       form.elements.start.value = timeValue(s);
       form.elements.end.value = timeValue(en);
     }
+    fillRepeat(e ? e.rrule : "", e && e.allDay ? new Date(s.getUTCFullYear(), s.getUTCMonth(), s.getUTCDate()) : s);
     syncAllDay();
+    syncRepeat();
     dialog.showModal();
     form.elements.title.focus();
   }
@@ -197,11 +291,28 @@
       allDay: form.elements.allDay.checked,
       start: start.toISOString(),
       end: end.toISOString(),
+      rrule: buildRule(),
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || "",
     };
   }
 
   if (form) {
     form.elements.allDay.addEventListener("change", syncAllDay);
+    form.elements.repeat.addEventListener("change", syncRepeat);
+    form.elements.repeatEnd.addEventListener("change", syncRepeat);
+    dialog.querySelector("[data-action=delete-occurrence]").addEventListener("click", async () => {
+      const id = form.dataset.id;
+      const occ = form.dataset.occurrence;
+      if (!id || !occ) return;
+      try {
+        await api("DELETE", `/api/events/${id}?occurrence=${encodeURIComponent(new Date(occ).toISOString().replace(".000Z", "Z"))}`);
+        dialog.close();
+        await loadWeek();
+        render(false);
+      } catch (err) {
+        dialog.querySelector(".dialog-error").textContent = `${t("event.error")} ${err.message}`;
+      }
+    });
     form.elements.date.addEventListener("change", () => {
       if (!form.elements.endDate.value || form.elements.endDate.value < form.elements.date.value) form.elements.endDate.value = form.elements.date.value;
     });
@@ -240,7 +351,8 @@
     const items = list.length
       ? list.map((e) =>
           el("button", { type: "button", class: `event${e.allDay ? " all-day" : ""}`, title: e.location || e.title,
-            onclick: (ev) => { ev.stopPropagation(); openDialog(e); } }, eventLabel(e, d)))
+            onclick: (ev) => { ev.stopPropagation(); openDialog(e); } }, eventLabel(e, d),
+            e.rrule ? el("span", { class: "repeat-mark", "aria-label": t("repeat.symbol"), title: t("repeat.symbol") }, "↻") : ""))
       : [el("div", { class: "day-empty" }, t("calendar.empty"))];
     const block = el(
       "div",

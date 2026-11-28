@@ -101,6 +101,25 @@
     "ann.day": "اليوم",
     "ann.month": "الشهر",
     "ann.year": "السنة (اختياري)",
-    "ann.age": "{n} سنة"
+    "ann.age": "{n} سنة",
+    "repeat.label": "التكرار",
+    "repeat.none": "بلا",
+    "repeat.daily": "يوميًا",
+    "repeat.weekly": "أسبوعيًا",
+    "repeat.biweekly": "كل أسبوعين",
+    "repeat.monthly": "شهريًا",
+    "repeat.yearly": "سنويًا",
+    "repeat.custom": "قاعدة مخصّصة",
+    "repeat.ends": "ينتهي",
+    "repeat.never": "أبدًا",
+    "repeat.until": "في تاريخ",
+    "repeat.count": "بعد عدد",
+    "repeat.untilDate": "آخر يوم",
+    "repeat.times": "عدد المواعيد",
+    "repeat.weekdays": "أيام الأسبوع",
+    "repeat.seriesHint": "تنطبق التغييرات على السلسلة كلها.",
+    "repeat.deleteOne": "حذف هذا الموعد فقط",
+    "repeat.deleteAll": "حذف السلسلة كلها",
+    "repeat.symbol": "سلسلة"
   }
 }

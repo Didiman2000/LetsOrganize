@@ -8,9 +8,12 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 	"unicode/utf8"
+
+	"github.com/Didiman2000/LetsOrganize/internal/recur"
 )
 
 // Zeiten werden immer in UTC mit fester Länge gespeichert. So lassen sie sich
@@ -26,17 +29,26 @@ func parseTime(s string) (time.Time, error) { return time.Parse(timeLayout, s) }
 // Ganztägige Termine beginnen um 00:00 UTC des ersten Tages und enden um
 // 00:00 UTC nach dem letzten Tag (wie bei Google Kalender: Ende exklusiv).
 type Event struct {
-	ID              int64     `json:"id"`
-	Title           string    `json:"title"`
-	Location        string    `json:"location"`
-	Notes           string    `json:"notes"`
-	AllDay          bool      `json:"allDay"`
-	Start           time.Time `json:"start"`
-	End             time.Time `json:"end"`
-	RRule           string    `json:"rrule,omitempty"`
+	ID       int64     `json:"id"`
+	Title    string    `json:"title"`
+	Location string    `json:"location"`
+	Notes    string    `json:"notes"`
+	AllDay   bool      `json:"allDay"`
+	Start    time.Time `json:"start"`
+	End      time.Time `json:"end"`
+	RRule    string    `json:"rrule,omitempty"`
+	// TimeZone ist die IANA-Zeitzone (z. B. Europe/Berlin), in der eine Serie
+	// gilt. Damit bleibt „jeden Montag 9 Uhr“ auch nach der Zeitumstellung 9 Uhr.
+	TimeZone        string    `json:"timeZone,omitempty"`
 	ReminderMinutes *int      `json:"reminderMinutes,omitempty"`
 	CategoryID      *int64    `json:"categoryId,omitempty"`
 	UpdatedAt       time.Time `json:"updatedAt"`
+
+	// Nur in Listen: Bei Vorkommen einer Serie stehen in Start/End die Zeiten
+	// dieses Vorkommens, in SeriesStart der Beginn des ersten Termins.
+	SeriesStart *time.Time `json:"seriesStart,omitempty"`
+
+	exdates map[string]bool // Beginn gelöschter Vorkommen im Format timeLayout
 }
 
 // Grenzen für Eingaben, damit niemand die Datenbank mit Riesentexten füllt.
@@ -82,20 +94,41 @@ func (e *Event) normalize() error {
 	if e.End.Before(e.Start) {
 		return &ValidationError{"end", "liegt vor dem Beginn"}
 	}
+	e.TimeZone = strings.TrimSpace(e.TimeZone)
+	if e.TimeZone != "" {
+		if len(e.TimeZone) > 64 {
+			return &ValidationError{"timeZone", "zu lang"}
+		}
+		if _, err := time.LoadLocation(e.TimeZone); err != nil {
+			return &ValidationError{"timeZone", "unbekannte Zeitzone"}
+		}
+	}
+	e.RRule = strings.TrimSpace(e.RRule)
+	if e.RRule != "" {
+		r, err := recur.Parse(e.RRule)
+		if err != nil {
+			return &ValidationError{"rrule", err.Error()}
+		}
+		e.RRule = r.String()
+		if e.End.Sub(e.Start) > 31*24*time.Hour {
+			return &ValidationError{"end", "ein Termin einer Serie darf höchstens 31 Tage dauern"}
+		}
+	}
 	if e.ReminderMinutes != nil && (*e.ReminderMinutes < 0 || *e.ReminderMinutes > 40_320) {
 		return &ValidationError{"reminderMinutes", "muss zwischen 0 und 40320 liegen"}
 	}
 	return nil
 }
 
-const eventColumns = `id, title, location, notes, all_day, starts_at, ends_at, rrule, reminder_minutes, category_id, updated_at`
+const eventColumns = `id, title, location, notes, all_day, starts_at, ends_at, rrule, time_zone, exdates, reminder_minutes, category_id, updated_at`
 
 func scanEvent(row interface{ Scan(...any) error }) (*Event, error) {
 	var e Event
-	var start, end, updated string
+	var start, end, updated, exdates string
 	var reminder sql.NullInt64
 	var category sql.NullInt64
-	if err := row.Scan(&e.ID, &e.Title, &e.Location, &e.Notes, &e.AllDay, &start, &end, &e.RRule, &reminder, &category, &updated); err != nil {
+	if err := row.Scan(&e.ID, &e.Title, &e.Location, &e.Notes, &e.AllDay, &start, &end, &e.RRule, &e.TimeZone, &exdates,
+		&reminder, &category, &updated); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrNotFound
 		}
@@ -109,6 +142,12 @@ func scanEvent(row interface{ Scan(...any) error }) (*Event, error) {
 		return nil, fmt.Errorf("Termin %d: Ende %q: %w", e.ID, end, err)
 	}
 	e.UpdatedAt, _ = parseTime(updated)
+	for _, x := range strings.Fields(exdates) {
+		if e.exdates == nil {
+			e.exdates = map[string]bool{}
+		}
+		e.exdates[x] = true
+	}
 	if reminder.Valid {
 		m := int(reminder.Int64)
 		e.ReminderMinutes = &m
@@ -120,8 +159,8 @@ func scanEvent(row interface{ Scan(...any) error }) (*Event, error) {
 	return &e, nil
 }
 
-// ListEvents liefert die Termine des Benutzers, die den Zeitraum [from, to) berühren.
-// Wiederholungen werden noch nicht aufgelöst (folgt in Phase 3).
+// ListEvents liefert die Termine des Benutzers, die den Zeitraum [from, to)
+// berühren. Serien werden in ihre einzelnen Vorkommen aufgelöst.
 func (s *Store) ListEvents(ctx context.Context, userID int64, from, to time.Time) ([]Event, error) {
 	if !to.After(from) {
 		return nil, &ValidationError{"to", "muss nach from liegen"}
@@ -129,17 +168,46 @@ func (s *Store) ListEvents(ctx context.Context, userID int64, from, to time.Time
 	if to.Sub(from) > 400*24*time.Hour {
 		return nil, &ValidationError{"to", "Zeitraum höchstens 400 Tage"}
 	}
-	rows, err := s.DB.QueryContext(ctx,
+	out := []Event{}
+	single, err := s.queryEvents(ctx,
 		`SELECT `+eventColumns+` FROM events
-		  WHERE user_id = ? AND deleted_at IS NULL
-		    AND starts_at < ? AND (ends_at > ? OR (ends_at = starts_at AND starts_at >= ?))
-		  ORDER BY all_day DESC, starts_at, id`,
+		  WHERE user_id = ? AND deleted_at IS NULL AND rrule = ''
+		    AND starts_at < ? AND (ends_at > ? OR (ends_at = starts_at AND starts_at >= ?))`,
 		userID, formatTime(to), formatTime(from), formatTime(from))
 	if err != nil {
 		return nil, err
 	}
+	out = append(out, single...)
+
+	series, err := s.queryEvents(ctx,
+		`SELECT `+eventColumns+` FROM events
+		  WHERE user_id = ? AND deleted_at IS NULL AND rrule <> '' AND starts_at < ?`,
+		userID, formatTime(to))
+	if err != nil {
+		return nil, err
+	}
+	for _, e := range series {
+		out = append(out, e.occurrences(from, to)...)
+	}
+	sort.SliceStable(out, func(i, j int) bool {
+		if out[i].AllDay != out[j].AllDay {
+			return out[i].AllDay
+		}
+		if !out[i].Start.Equal(out[j].Start) {
+			return out[i].Start.Before(out[j].Start)
+		}
+		return out[i].ID < out[j].ID
+	})
+	return out, nil
+}
+
+func (s *Store) queryEvents(ctx context.Context, q string, args ...any) ([]Event, error) {
+	rows, err := s.DB.QueryContext(ctx, q, args...)
+	if err != nil {
+		return nil, err
+	}
 	defer rows.Close()
-	out := []Event{}
+	var out []Event
 	for rows.Next() {
 		e, err := scanEvent(rows)
 		if err != nil {
@@ -148,6 +216,43 @@ func (s *Store) ListEvents(ctx context.Context, userID int64, from, to time.Time
 		out = append(out, *e)
 	}
 	return out, rows.Err()
+}
+
+// location liefert die Zeitzone, in der eine Serie berechnet wird.
+// Ganztägige Termine rechnen in UTC, weil sie reine Tagesangaben sind.
+func (e *Event) location() *time.Location {
+	if e.AllDay || e.TimeZone == "" {
+		return time.UTC
+	}
+	if loc, err := time.LoadLocation(e.TimeZone); err == nil {
+		return loc
+	}
+	return time.UTC
+}
+
+func (e *Event) occurrences(from, to time.Time) []Event {
+	rule, err := recur.Parse(e.RRule)
+	if err != nil {
+		// Unlesbare Regel: wenigstens den ersten Termin zeigen.
+		if e.Start.Before(to) && e.End.After(from) {
+			return []Event{*e}
+		}
+		return nil
+	}
+	loc := e.location()
+	dur := e.End.Sub(e.Start)
+	seriesStart := e.Start
+	var out []Event
+	skip := func(t time.Time) bool { return e.exdates[formatTime(t)] }
+	for _, t := range rule.Between(e.Start.In(loc), dur, from, to, skip) {
+		occ := *e
+		occ.Start = t.UTC()
+		occ.End = t.Add(dur).UTC()
+		occ.SeriesStart = &seriesStart
+		occ.exdates = nil
+		out = append(out, occ)
+	}
+	return out
 }
 
 // GetEvent liefert einen Termin des Benutzers.
@@ -188,10 +293,10 @@ func (s *Store) CreateEvent(ctx context.Context, userID int64, e Event) (*Event,
 	}
 	now := formatTime(time.Now())
 	res, err := s.DB.ExecContext(ctx,
-		`INSERT INTO events (user_id, title, location, notes, all_day, starts_at, ends_at, rrule,
+		`INSERT INTO events (user_id, title, location, notes, all_day, starts_at, ends_at, rrule, time_zone,
 		                     reminder_minutes, category_id, dirty, created_at, updated_at)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)`,
-		userID, e.Title, e.Location, e.Notes, e.AllDay, formatTime(e.Start), formatTime(e.End), e.RRule,
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)`,
+		userID, e.Title, e.Location, e.Notes, e.AllDay, formatTime(e.Start), formatTime(e.End), e.RRule, e.TimeZone,
 		nullable(e.ReminderMinutes), nullable(e.CategoryID), now, now)
 	if err != nil {
 		return nil, fmt.Errorf("Termin anlegen: %w", err)
@@ -210,10 +315,10 @@ func (s *Store) UpdateEvent(ctx context.Context, userID int64, e Event) (*Event,
 	}
 	res, err := s.DB.ExecContext(ctx,
 		`UPDATE events SET title = ?, location = ?, notes = ?, all_day = ?, starts_at = ?, ends_at = ?,
-		       rrule = ?, reminder_minutes = ?, category_id = ?, dirty = 1, updated_at = ?
+		       rrule = ?, time_zone = ?, reminder_minutes = ?, category_id = ?, dirty = 1, updated_at = ?
 		  WHERE id = ? AND user_id = ? AND deleted_at IS NULL`,
 		e.Title, e.Location, e.Notes, e.AllDay, formatTime(e.Start), formatTime(e.End),
-		e.RRule, nullable(e.ReminderMinutes), nullable(e.CategoryID), formatTime(time.Now()),
+		e.RRule, e.TimeZone, nullable(e.ReminderMinutes), nullable(e.CategoryID), formatTime(time.Now()),
 		e.ID, userID)
 	if err != nil {
 		return nil, fmt.Errorf("Termin ändern: %w", err)
@@ -230,6 +335,40 @@ func (s *Store) DeleteEvent(ctx context.Context, userID, id int64) error {
 	res, err := s.DB.ExecContext(ctx,
 		`UPDATE events SET deleted_at = ?, updated_at = ?, dirty = 1
 		  WHERE id = ? AND user_id = ? AND deleted_at IS NULL`, now, now, id, userID)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+// DeleteOccurrence löscht ein einzelnes Vorkommen einer Serie. occurrence ist
+// dessen Beginn. Die Serie selbst bleibt bestehen.
+func (s *Store) DeleteOccurrence(ctx context.Context, userID, id int64, occurrence time.Time) error {
+	e, err := s.GetEvent(ctx, userID, id)
+	if err != nil {
+		return err
+	}
+	if e.RRule == "" {
+		return &ValidationError{"occurrence", "der Termin ist keine Serie"}
+	}
+	occurrence = occurrence.UTC().Truncate(time.Second)
+	found := false
+	for _, o := range e.occurrences(occurrence, occurrence.Add(time.Second)) {
+		if o.Start.Equal(occurrence) {
+			found = true
+			break
+		}
+	}
+	if !found {
+		return &ValidationError{"occurrence", "an diesem Zeitpunkt beginnt kein Termin der Serie"}
+	}
+	res, err := s.DB.ExecContext(ctx,
+		`UPDATE events SET exdates = TRIM(exdates || ' ' || ?), dirty = 1, updated_at = ?
+		  WHERE id = ? AND user_id = ? AND deleted_at IS NULL`,
+		formatTime(occurrence), formatTime(time.Now()), id, userID)
 	if err != nil {
 		return err
 	}

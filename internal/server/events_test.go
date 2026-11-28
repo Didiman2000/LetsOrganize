@@ -98,3 +98,33 @@ func jsonID(id int64) string {
 	b, _ := json.Marshal(id)
 	return string(b)
 }
+
+func TestRecurringEventsAPI(t *testing.T) {
+	s := newDBServer(t)
+	body := `{"title":"Jour fixe","start":"2026-11-30T08:00:00Z","end":"2026-11-30T09:00:00Z","rrule":"FREQ=WEEKLY","timeZone":"Europe/Berlin"}`
+	rec := do(s, "POST", "/api/events", body, jsonHeaders)
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("anlegen: %d %s", rec.Code, rec.Body)
+	}
+	var e store.Event
+	json.Unmarshal(rec.Body.Bytes(), &e)
+	list := do(s, "GET", "/api/events?from=2026-11-30T00:00:00Z&to=2026-12-28T00:00:00Z", "", nil)
+	var occ []store.Event
+	json.Unmarshal(list.Body.Bytes(), &occ)
+	if len(occ) != 4 || occ[1].SeriesStart == nil {
+		t.Fatalf("Vorkommen: %d %s", len(occ), list.Body)
+	}
+	url := "/api/events/" + jsonID(e.ID)
+	if rec := do(s, "DELETE", url+"?occurrence=kaputt", "", map[string]string{csrfHeader: "1"}); rec.Code != http.StatusBadRequest {
+		t.Errorf("ungültiges Vorkommen: %d", rec.Code)
+	}
+	if rec := do(s, "DELETE", url+"?occurrence=2026-12-07T08:00:00Z", "", map[string]string{csrfHeader: "1"}); rec.Code != http.StatusNoContent {
+		t.Fatalf("Vorkommen löschen: %d %s", rec.Code, rec.Body)
+	}
+	list = do(s, "GET", "/api/events?from=2026-11-30T00:00:00Z&to=2026-12-28T00:00:00Z", "", nil)
+	json.Unmarshal(list.Body.Bytes(), &occ)
+	if len(occ) != 3 {
+		t.Errorf("nach Löschen eines Vorkommens: %d", len(occ))
+	}
+}
+

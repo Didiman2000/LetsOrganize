@@ -57,7 +57,8 @@ MCP-Schnittstelle für externe KI-Agenten (siehe Phase 7). Später: Anrufe, Gmai
 
 ### Phase 3 – Register ohne Google
 - [x] Kalender: Termine anlegen, ändern, löschen (Wochenansicht, ganztägig, Schnittstelle /api/events mit CSRF-Schutz)
-- [ ] Kalender: Wiederholungen, Erinnerungen, Verschieben per Ziehen
+- [x] Kalender: wiederkehrende Termine (RRULE: täglich, wöchentlich mit Wochentagen, alle zwei Wochen, monatlich, jährlich; Ende nach Anzahl oder Datum), richtige Uhrzeit über die Zeitumstellung, einzelne Vorkommen löschen (Migration 0003)
+- [ ] Kalender: Erinnerungen, Verschieben per Ziehen, Monatsregeln wie „jeden 2. Dienstag“
 - [x] Aufgaben: anlegen per Schnell-Eingabe, abhaken, Fälligkeit, Priorität, Notiz, erledigte Liste (Schnittstelle /api/tasks)
 - [ ] Aufgaben: Reihenfolge per Ziehen, Kategorien
 - [x] Adressen: Register je Sprache (A–Z, arabisches Alphabet), Suche in Namen, Firma und Feldern, Telefon/E-Mail/Anschrift/Webseite, Geburtstag mit oder ohne Jahr (Schnittstelle /api/contacts)
@@ -65,7 +66,7 @@ MCP-Schnittstelle für externe KI-Agenten (siehe Phase 7). Später: Anrufe, Gmai
 - [x] Notizen: Liste und Seite mit automatischem Speichern (/api/notes)
 - [x] Planer: Jahresübersicht mit farbigen Zeiträumen, Jahr blättern (/api/planner, Migration 0002 für Farben)
 - [x] Jahrestage: eigene Jahrestage plus Geburtstage aus dem Adressbuch, Alter, Sprung zum Kontakt (/api/anniversaries)
-- [ ] Wiederkehrende Termine, Erinnerungen, Kategorien
+- [ ] Erinnerungen, Kategorien
 
 ### Phase 4 – Google-Abgleich
 - [ ] OAuth-Anmeldung, Token verschlüsselt speichern

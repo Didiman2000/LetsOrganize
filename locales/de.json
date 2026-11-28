@@ -101,6 +101,25 @@
     "ann.day": "Tag",
     "ann.month": "Monat",
     "ann.year": "Jahr (optional)",
-    "ann.age": "{n} Jahre"
+    "ann.age": "{n} Jahre",
+    "repeat.label": "Wiederholung",
+    "repeat.none": "Keine",
+    "repeat.daily": "Täglich",
+    "repeat.weekly": "Wöchentlich",
+    "repeat.biweekly": "Alle zwei Wochen",
+    "repeat.monthly": "Monatlich",
+    "repeat.yearly": "Jährlich",
+    "repeat.custom": "Eigene Regel",
+    "repeat.ends": "Endet",
+    "repeat.never": "Nie",
+    "repeat.until": "Am Datum",
+    "repeat.count": "Nach Anzahl",
+    "repeat.untilDate": "Letzter Tag",
+    "repeat.times": "Anzahl Termine",
+    "repeat.weekdays": "Wochentage",
+    "repeat.seriesHint": "Änderungen gelten für die ganze Serie.",
+    "repeat.deleteOne": "Nur diesen Termin löschen",
+    "repeat.deleteAll": "Ganze Serie löschen",
+    "repeat.symbol": "Serie"
   }
 }
