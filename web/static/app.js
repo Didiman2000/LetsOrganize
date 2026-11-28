@@ -470,14 +470,223 @@
     );
   }
 
-  function renderAddresses() {
-    // Buchstabenleiste vorerst lateinisch; je Sprache einstellbar in Phase 3.
-    const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
-    pageStart.replaceChildren(
-      el("header", { class: "page-head" }, el("h1", {}, t("tab.addresses"))),
-      el("div", { class: "az" }, ...letters.map((l) => el("span", {}, l)))
+  // ---------- Adressen ----------
+
+  const alphabet = Array.from(binder.dataset.alphabet || "ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+  let contacts = [];
+  let contactsLoaded = false;
+  let contactLetter = null;
+  let contactSearch = "";
+  let contactSelected = null;
+  let searchTimer = 0;
+  const contactDialog = document.getElementById("contact-dialog");
+  const contactForm = contactDialog && contactDialog.querySelector("form");
+
+  // Varianten wie أ, إ, آ stehen im Register unter ا.
+  const letterAliases = { "أ": "ا", "إ": "ا", "آ": "ا", "ٱ": "ا", "ة": "ه", "ى": "ي", "ؤ": "و", "ئ": "ي" };
+  const registerOf = (c) => {
+    const l = letterAliases[c.letter] || c.letter;
+    return alphabet.includes(l) ? l : "#";
+  };
+
+  async function loadContacts() {
+    try {
+      const q = contactSearch ? `?q=${encodeURIComponent(contactSearch)}` : "";
+      contacts = await api("GET", `/api/contacts${q}`);
+      contactsLoaded = true;
+    } catch (_) {
+      contacts = [];
+      contactsLoaded = false;
+    }
+    if (contactSelected) contactSelected = contacts.find((c) => c.id === contactSelected.id) || null;
+  }
+
+  async function refreshContacts(keepFocus) {
+    await loadContacts();
+    if (section !== "addresses") return;
+    render(false);
+    if (keepFocus) {
+      const box = pageStart.querySelector(".contact-search");
+      if (box) { box.focus(); box.setSelectionRange(box.value.length, box.value.length); }
+    }
+  }
+
+  const fieldText = (f) => {
+    const kind = t(`contact.kind.${f.kind}`);
+    return f.label ? `${kind} (${f.label})` : kind;
+  };
+
+  function fieldValue(f) {
+    if (f.kind === "phone") return el("a", { href: `tel:${f.value.replace(/[^+0-9]/g, "")}` }, f.value);
+    if (f.kind === "email") return el("a", { href: `mailto:${f.value}` }, f.value);
+    if (f.kind === "url" && /^https?:\/\//i.test(f.value)) return el("a", { href: f.value, target: "_blank", rel: "noopener noreferrer" }, f.value);
+    return el("span", { class: f.kind === "address" ? "multiline" : "" }, f.value);
+  }
+
+  function formatBirthday(b) {
+    if (!b) return "";
+    if (b.startsWith("--")) {
+      const [m, d] = b.slice(2).split("-").map(Number);
+      return fmt({ day: "numeric", month: "long" }).format(new Date(2000, m - 1, d));
+    }
+    const [y, m, d] = b.split("-").map(Number);
+    return fmt({ dateStyle: "long" }).format(new Date(y, m - 1, d));
+  }
+
+  function contactCard(c) {
+    const sub = [c.jobTitle, c.organization].filter(Boolean).join(", ");
+    const rows = c.fields.map((f) => el("div", { class: "card-row" }, el("dt", {}, fieldText(f)), el("dd", {}, fieldValue(f))));
+    if (c.birthday) rows.push(el("div", { class: "card-row" }, el("dt", {}, t("contact.birthday")), el("dd", {}, formatBirthday(c.birthday))));
+    return el(
+      "article",
+      { class: "contact-card" },
+      el("header", { class: "page-head" },
+        el("h2", {}, c.displayName),
+        el("div", { class: "nav" },
+          el("button", { type: "button", onclick: () => openContactDialog(c) }, t("contact.editButton")),
+          el("button", { type: "button", onclick: () => openContactDialog(null) }, "+"))),
+      sub ? el("p", { class: "card-sub" }, sub) : "",
+      el("dl", {}, ...rows),
+      c.notes ? el("p", { class: "card-notes multiline" }, c.notes) : ""
     );
-    pageEnd.replaceChildren(el("p", { class: "soon" }, t("section.soon")));
+  }
+
+  function renderAddresses() {
+    const used = new Set(contacts.map(registerOf));
+    if (!contactLetter || (!contactSearch && !used.has(contactLetter) && used.size)) {
+      contactLetter = alphabet.find((l) => used.has(l)) || (used.has("#") ? "#" : alphabet[0]);
+    }
+    const letters = [...alphabet, "#"];
+    const strip = el("div", { class: "az", role: "tablist" }, ...letters.map((l) =>
+      el("button", {
+        type: "button",
+        class: `${used.has(l) ? "has" : ""}${!contactSearch && l === contactLetter ? " current" : ""}`,
+        "aria-pressed": String(!contactSearch && l === contactLetter),
+        onclick: () => { contactLetter = l; contactSearch = ""; refreshContacts(false); },
+      }, l)));
+
+    const search = el("input", { class: "contact-search", type: "search", maxlength: "200", placeholder: t("contact.search"), "aria-label": t("contact.search") });
+    search.value = contactSearch;
+    search.addEventListener("input", () => {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => { contactSearch = search.value.trim(); refreshContacts(true); }, 250);
+    });
+
+    const shown = contactSearch ? contacts : contacts.filter((c) => registerOf(c) === contactLetter);
+    const list = shown.length
+      ? el("ul", { class: "contacts" }, ...shown.map((c) => {
+          const phone = c.fields.find((f) => f.kind === "phone");
+          return el("li", {},
+            el("button", { type: "button", class: `contact-row${contactSelected && contactSelected.id === c.id ? " selected" : ""}`,
+              onclick: () => { contactSelected = c; render(false); } },
+              el("span", { class: "contact-name" }, c.displayName),
+              el("span", { class: "contact-hint" }, c.organization && c.organization !== c.displayName ? c.organization : phone ? phone.value : "")));
+        }))
+      : el("p", { class: "soon" }, t(!contactsLoaded ? "section.soon" : contactSearch ? "contact.noResults" : "contact.none"));
+
+    pageStart.replaceChildren(
+      el("header", { class: "page-head" }, el("h1", {}, t("tab.addresses")),
+        el("span", { class: "meta" }, t("contact.count", { n: fmtNum.format(contacts.length) }))),
+      contactsLoaded ? search : "",
+      strip,
+      list
+    );
+    pageEnd.replaceChildren(
+      contactSelected
+        ? contactCard(contactSelected)
+        : el("div", { class: "contact-empty" },
+            el("p", { class: "soon" }, t("contact.pick")),
+            contactsLoaded ? el("div", { class: "nav" }, el("button", { type: "button", onclick: () => openContactDialog(null) }, `+ ${t("contact.new")}`)) : "")
+    );
+  }
+
+  function fieldRow(f) {
+    const kind = el("select", { name: "fieldKind", "aria-label": t("contact.fields") },
+      ...["phone", "email", "address", "url"].map((k) => el("option", { value: k }, t(`contact.kind.${k}`))));
+    kind.value = f.kind;
+    const label = el("input", { name: "fieldLabel", list: "contact-labels", maxlength: "100", placeholder: t("contact.label"), "aria-label": t("contact.label") });
+    label.value = f.label || "";
+    const value = el(f.kind === "address" ? "textarea" : "input", { name: "fieldValue", maxlength: "2000", rows: "2", placeholder: t("contact.value"), "aria-label": t("contact.value") });
+    value.value = f.value || "";
+    const row = el("div", { class: "field-row" }, kind, label, value,
+      el("button", { type: "button", class: "remove", "aria-label": t("contact.remove"), title: t("contact.remove"), onclick: () => row.remove() }, "×"));
+    kind.addEventListener("change", () => {
+      const next = fieldRow({ kind: kind.value, label: label.value, value: row.querySelector("[name=fieldValue]").value });
+      row.replaceWith(next);
+    });
+    return row;
+  }
+
+  function openContactDialog(c) {
+    if (!contactDialog) return;
+    contactForm.reset();
+    contactForm.dataset.id = c ? c.id : "";
+    contactDialog.querySelector(".dialog-title").textContent = t(c ? "contact.edit" : "contact.new");
+    contactDialog.querySelector("[data-action=delete]").hidden = !c;
+    contactDialog.querySelector(".dialog-error").textContent = "";
+    const f = contactForm.elements;
+    f.givenName.value = c ? c.givenName : "";
+    f.familyName.value = c ? c.familyName : "";
+    f.organization.value = c ? c.organization : "";
+    f.jobTitle.value = c ? c.jobTitle : "";
+    f.notes.value = c ? c.notes : "";
+    const b = c && c.birthday;
+    f.noYear.checked = !!(b && b.startsWith("--"));
+    f.birthday.value = b ? (b.startsWith("--") ? `2000${b.slice(1)}` : b) : "";
+    const box = contactDialog.querySelector(".fields");
+    const fields = c && c.fields.length ? c.fields : [{ kind: "phone", label: "" }, { kind: "email", label: "" }];
+    box.replaceChildren(...fields.map(fieldRow));
+    contactDialog.showModal();
+    f.givenName.focus();
+  }
+
+  if (contactForm) {
+    contactDialog.querySelectorAll("[data-add-field]").forEach((btn) =>
+      btn.addEventListener("click", () => {
+        const row = fieldRow({ kind: btn.dataset.addField, label: "" });
+        contactDialog.querySelector(".fields").append(row);
+        row.querySelector("[name=fieldValue]").focus();
+      }));
+    contactForm.addEventListener("submit", async (ev) => {
+      if (ev.submitter && ev.submitter.value === "cancel") return;
+      ev.preventDefault();
+      const f = contactForm.elements;
+      let birthday = f.birthday.value || null;
+      if (birthday && f.noYear.checked) birthday = `--${birthday.slice(5)}`;
+      const fields = Array.from(contactDialog.querySelectorAll(".field-row")).map((row) => ({
+        kind: row.querySelector("[name=fieldKind]").value,
+        label: row.querySelector("[name=fieldLabel]").value,
+        value: row.querySelector("[name=fieldValue]").value,
+      }));
+      const body = {
+        givenName: f.givenName.value, familyName: f.familyName.value,
+        organization: f.organization.value, jobTitle: f.jobTitle.value,
+        birthday, notes: f.notes.value, fields,
+      };
+      const id = contactForm.dataset.id;
+      try {
+        const saved = await api(id ? "PUT" : "POST", id ? `/api/contacts/${id}` : "/api/contacts", body);
+        contactDialog.close();
+        contactSelected = saved;
+        contactLetter = registerOf(saved);
+        contactSearch = "";
+        refreshContacts(false);
+      } catch (err) {
+        contactDialog.querySelector(".dialog-error").textContent = `${t("event.error")} ${err.message}`;
+      }
+    });
+    contactDialog.querySelector("[data-action=delete]").addEventListener("click", async () => {
+      const id = contactForm.dataset.id;
+      if (!id) return;
+      try {
+        await api("DELETE", `/api/contacts/${id}`);
+        contactDialog.close();
+        contactSelected = null;
+        refreshContacts(false);
+      } catch (err) {
+        contactDialog.querySelector(".dialog-error").textContent = `${t("event.error")} ${err.message}`;
+      }
+    });
   }
 
   function renderGeneric() {
@@ -505,7 +714,7 @@
   // Bild-auf/-ab blättert in der Kalenderwoche.
   document.addEventListener("keydown", (e) => {
     if (section !== "calendar" || e.target.closest("input, textarea, select")) return;
-    if ((dialog && dialog.open) || (taskDialog && taskDialog.open)) return;
+    if (document.querySelector("dialog[open]")) return;
     if (e.key === "PageDown") goWeek(7);
     if (e.key === "PageUp") goWeek(-7);
   });
@@ -514,6 +723,6 @@
     .then((r) => r.json())
     .then((data) => { messages = data.messages || {}; })
     .catch(() => {})
-    .then(() => Promise.all([loadWeek(), loadTasks()]))
+    .then(() => Promise.all([loadWeek(), loadTasks(), loadContacts()]))
     .finally(() => render(false));
 })();

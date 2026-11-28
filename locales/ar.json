@@ -2,7 +2,8 @@
   "meta": {
     "name": "العربية",
     "dir": "rtl",
-    "weekStart": 6
+    "weekStart": 6,
+    "alphabet": "ابتثجحخدذرزسشصضطظعغفقكلمنهوي"
   },
   "messages": {
     "app.title": "LetsOrganize",
@@ -53,6 +54,31 @@
     "task.addPlaceholder": "اكتب مهمة جديدة واضغط Enter …",
     "task.openCount": "{n} مفتوحة",
     "task.noneOpen": "تم إنجاز كل شيء.",
-    "task.noneDone": "لم يُنجز شيء بعد."
+    "task.noneDone": "لم يُنجز شيء بعد.",
+    "contact.new": "جهة اتصال جديدة",
+    "contact.edit": "تعديل جهة الاتصال",
+    "contact.search": "بحث …",
+    "contact.count": "{n} إدخالات",
+    "contact.none": "لا توجد إدخالات تحت هذا الحرف.",
+    "contact.noResults": "لم يُعثر على شيء.",
+    "contact.pick": "اختر جهة اتصال من الجهة الأخرى.",
+    "contact.givenName": "الاسم الأول",
+    "contact.familyName": "اسم العائلة",
+    "contact.organization": "الشركة",
+    "contact.jobTitle": "المسمى الوظيفي",
+    "contact.birthday": "تاريخ الميلاد",
+    "contact.noYear": "السنة غير معروفة",
+    "contact.fields": "بيانات الاتصال",
+    "contact.label": "التسمية",
+    "contact.value": "القيمة",
+    "contact.remove": "إزالة",
+    "contact.kind.phone": "هاتف",
+    "contact.kind.email": "بريد إلكتروني",
+    "contact.kind.address": "عنوان",
+    "contact.kind.url": "موقع ويب",
+    "contact.label.work": "العمل",
+    "contact.label.home": "المنزل",
+    "contact.label.mobile": "الجوال",
+    "contact.editButton": "تعديل"
   }
 }

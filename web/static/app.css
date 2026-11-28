@@ -313,18 +313,6 @@ body[data-tab-shape="notched"] .tab { border-start-end-radius: 14px 4px; border-
 .day.today .day-num { color: #fff; background: var(--lo-color-accent); border-radius: 50%; text-align: center; padding-inline: 4px; }
 .day-empty { font-family: var(--lo-font-hand); color: var(--lo-color-ink-soft); opacity: 0.55; font-size: 15px; line-height: 26px; padding-inline-start: 2px; }
 
-/* A–Z-Leiste im Adressteil */
-.az { position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: 4px; margin-block-start: 18px; }
-.az span {
-  inline-size: 28px; block-size: 28px;
-  display: inline-grid; place-items: center;
-  border: 1px solid var(--lo-color-paper-edge);
-  border-radius: 4px;
-  font-family: var(--lo-font-heading);
-  color: var(--section-color);
-  background: var(--lo-color-paper);
-}
-
 /* Jahresplaner */
 .planner {
   position: relative; z-index: 1;
@@ -472,6 +460,78 @@ body[data-tab-shape="notched"] .tab { border-start-end-radius: 14px 4px; border-
   border-radius: 4px;
   background: #fff;
   color: var(--lo-color-ink);
+}
+
+/* ---------- Adressen ---------- */
+
+.contact-search {
+  position: relative; z-index: 1;
+  inline-size: 100%;
+  margin-block-end: 10px;
+  padding-block: 5px; padding-inline: 10px;
+  border: 1px solid var(--lo-color-line);
+  border-radius: 14px;
+  background: var(--lo-color-paper);
+  color: var(--lo-color-ink);
+  font: inherit; font-size: 14px;
+}
+.contact-search:focus { outline: 2px solid var(--section-color); outline-offset: -1px; }
+.az { position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: 3px; margin-block-end: 12px; }
+.az button {
+  min-inline-size: 26px; block-size: 26px;
+  padding-inline: 3px;
+  border: 1px solid var(--lo-color-paper-edge);
+  border-radius: 4px;
+  background: var(--lo-color-paper);
+  color: var(--lo-color-ink-soft);
+  font-family: var(--lo-font-heading); font-size: 14px;
+  opacity: 0.55;
+  cursor: pointer;
+}
+.az button.has { color: var(--section-color); border-color: color-mix(in srgb, var(--section-color) 40%, var(--lo-color-paper-edge)); opacity: 1; }
+.az button.current { background: var(--section-color); border-color: var(--section-color); color: #fff; opacity: 1; }
+.contacts { position: relative; z-index: 1; list-style: none; margin: 0; padding: 0; }
+.contact-row {
+  display: flex; align-items: baseline; gap: 10px;
+  inline-size: 100%; block-size: 28px;
+  padding-block: 0; padding-inline: 4px;
+  border: 0; border-radius: 3px;
+  background: none; color: var(--lo-color-ink);
+  font: inherit; text-align: start;
+  cursor: pointer;
+}
+.contact-row:hover, .contact-row:focus-visible { background: color-mix(in srgb, var(--section-color) 10%, transparent); outline: none; }
+.contact-row.selected { background: color-mix(in srgb, var(--section-color) 18%, transparent); }
+.contact-name { font-family: var(--lo-font-hand); font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.contact-hint { margin-inline-start: auto; color: var(--lo-color-ink-soft); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.contact-card { position: relative; z-index: 1; }
+.card-sub { margin-block: -6px 12px; color: var(--lo-color-ink-soft); font-style: italic; }
+.contact-card dl { margin: 0; }
+.card-row { display: grid; grid-template-columns: minmax(110px, 34%) 1fr; gap: 12px; padding-block: 4px; border-block-end: 1px solid var(--lo-color-line); }
+.card-row dt { color: var(--lo-color-ink-soft); font-size: 13px; padding-block-start: 2px; }
+.card-row dd { margin: 0; font-family: var(--lo-font-hand); font-size: 16px; overflow-wrap: anywhere; }
+.card-row a { color: var(--lo-color-ink); text-decoration-color: var(--section-color); }
+.card-notes { margin-block-start: 14px; font-family: var(--lo-font-hand); color: var(--lo-color-ink-soft); }
+.multiline { white-space: pre-line; }
+.contact-empty { position: relative; z-index: 1; }
+.contact-dialog { inline-size: min(620px, calc(100vw - 32px)); border-block-start-color: var(--lo-tab-addresses); }
+.contact-dialog h2 { color: var(--lo-tab-addresses); }
+.contact-dialog .buttons .primary { background: var(--lo-tab-addresses); border-color: var(--lo-tab-addresses); }
+.contact-dialog input:focus, .contact-dialog textarea:focus, .contact-dialog select:focus { outline-color: var(--lo-tab-addresses); }
+.contact-dialog form { max-block-size: calc(100vh - 60px); overflow-y: auto; }
+.contact-dialog label.check { align-self: end; padding-block-end: 8px; }
+.contact-dialog fieldset { margin: 0; padding: 10px; border: 1px solid var(--lo-color-line); border-radius: 6px; }
+.contact-dialog legend { padding-inline: 4px; font-size: 13px; color: var(--lo-color-ink-soft); }
+.fields { display: flex; flex-direction: column; gap: 6px; }
+.field-row { display: grid; grid-template-columns: 110px 120px 1fr 28px; gap: 6px; align-items: start; }
+.field-row .remove { block-size: 32px; padding: 0; border: 0; background: none; color: var(--lo-color-ink-soft); font-size: 20px; cursor: pointer; }
+.field-row .remove:hover { color: var(--lo-color-accent); }
+.add-fields { display: flex; flex-wrap: wrap; gap: 6px; margin-block-start: 8px; }
+.add-fields button { font: inherit; font-size: 13px; padding-block: 3px; padding-inline: 8px; border: 1px dashed var(--lo-color-line); border-radius: 12px; background: none; color: var(--lo-color-ink-soft); cursor: pointer; }
+.add-fields button:hover { color: var(--lo-tab-addresses); border-color: var(--lo-tab-addresses); }
+@media (max-width: 620px) {
+  .field-row { grid-template-columns: 1fr 1fr 28px; }
+  .field-row [name=fieldValue] { grid-column: 1 / 3; }
 }
 
 /* ---------- Rechts nach links ---------- */

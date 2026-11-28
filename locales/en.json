@@ -2,7 +2,8 @@
   "meta": {
     "name": "English",
     "dir": "ltr",
-    "weekStart": 1
+    "weekStart": 1,
+    "alphabet": "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
   },
   "messages": {
     "app.title": "LetsOrganize",
@@ -53,6 +54,31 @@
     "task.addPlaceholder": "Type a new task and press Enter …",
     "task.openCount": "{n} open",
     "task.noneOpen": "All done.",
-    "task.noneDone": "Nothing done yet."
+    "task.noneDone": "Nothing done yet.",
+    "contact.new": "New contact",
+    "contact.edit": "Edit contact",
+    "contact.search": "Search …",
+    "contact.count": "{n} entries",
+    "contact.none": "No entries under this letter.",
+    "contact.noResults": "Nothing found.",
+    "contact.pick": "Pick a contact on the left.",
+    "contact.givenName": "First name",
+    "contact.familyName": "Last name",
+    "contact.organization": "Company",
+    "contact.jobTitle": "Job title",
+    "contact.birthday": "Birthday",
+    "contact.noYear": "Year unknown",
+    "contact.fields": "Contact details",
+    "contact.label": "Label",
+    "contact.value": "Value",
+    "contact.remove": "Remove",
+    "contact.kind.phone": "Phone",
+    "contact.kind.email": "Email",
+    "contact.kind.address": "Address",
+    "contact.kind.url": "Website",
+    "contact.label.work": "Work",
+    "contact.label.home": "Home",
+    "contact.label.mobile": "Mobile",
+    "contact.editButton": "Edit"
   }
 }

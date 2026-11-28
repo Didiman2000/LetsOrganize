@@ -6,7 +6,7 @@
 // Jede Sprache liegt als JSON-Datei im Ordner locales, z. B. de.json:
 //
 //	{
-//	  "meta": {"name": "Deutsch", "dir": "ltr", "weekStart": 1},
+//	  "meta": {"name": "Deutsch", "dir": "ltr", "weekStart": 1, "alphabet": "ABC…Z"},
 //	  "messages": {"tab.calendar": "Kalender", ...}
 //	}
 //
@@ -32,6 +32,8 @@ type Meta struct {
 	Name      string `json:"name"`
 	Dir       string `json:"dir"`
 	WeekStart int    `json:"weekStart"`
+	// Alphabet sind die Buchstaben für das Register im Adressbuch.
+	Alphabet string `json:"alphabet,omitempty"`
 }
 
 // Locale ist eine geladene Sprache.
@@ -79,6 +81,9 @@ func Load(fsys fs.FS, dir string) (*Catalog, error) {
 		}
 		if l.Meta.WeekStart < 0 || l.Meta.WeekStart > 6 {
 			return nil, fmt.Errorf("Sprachdatei %s: weekStart muss zwischen 0 und 6 liegen", e.Name())
+		}
+		if l.Meta.Alphabet == "" {
+			l.Meta.Alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 		}
 		if l.Messages == nil {
 			l.Messages = map[string]string{}

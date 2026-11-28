@@ -93,6 +93,7 @@ func New(cfg Config) (*Server, error) {
 		s.localUserID = u.ID
 		s.routesEvents()
 		s.routesTasks()
+		s.routesContacts()
 	}
 	return s, nil
 }
@@ -157,6 +158,7 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 		"Lang":      loc.Code,
 		"Dir":       loc.Meta.Dir,
 		"WeekStart": loc.Meta.WeekStart,
+		"Alphabet":  loc.Meta.Alphabet,
 		"Theme":     th,
 		"TabShape":  th.TabShape,
 		"Tabs":      tabs,

@@ -2,7 +2,8 @@
   "meta": {
     "name": "Deutsch",
     "dir": "ltr",
-    "weekStart": 1
+    "weekStart": 1,
+    "alphabet": "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
   },
   "messages": {
     "app.title": "LetsOrganize",
@@ -53,6 +54,31 @@
     "task.addPlaceholder": "Neue Aufgabe eintragen und Enter drücken …",
     "task.openCount": "{n} offen",
     "task.noneOpen": "Alles erledigt.",
-    "task.noneDone": "Noch nichts erledigt."
+    "task.noneDone": "Noch nichts erledigt.",
+    "contact.new": "Neuer Kontakt",
+    "contact.edit": "Kontakt bearbeiten",
+    "contact.search": "Suchen …",
+    "contact.count": "{n} Einträge",
+    "contact.none": "Keine Einträge unter diesem Buchstaben.",
+    "contact.noResults": "Nichts gefunden.",
+    "contact.pick": "Wähle links einen Kontakt aus.",
+    "contact.givenName": "Vorname",
+    "contact.familyName": "Nachname",
+    "contact.organization": "Firma",
+    "contact.jobTitle": "Position",
+    "contact.birthday": "Geburtstag",
+    "contact.noYear": "Jahr unbekannt",
+    "contact.fields": "Erreichbarkeit",
+    "contact.label": "Bezeichnung",
+    "contact.value": "Eintrag",
+    "contact.remove": "Entfernen",
+    "contact.kind.phone": "Telefon",
+    "contact.kind.email": "E-Mail",
+    "contact.kind.address": "Anschrift",
+    "contact.kind.url": "Webseite",
+    "contact.label.work": "Geschäftlich",
+    "contact.label.home": "Privat",
+    "contact.label.mobile": "Mobil",
+    "contact.editButton": "Bearbeiten"
   }
 }

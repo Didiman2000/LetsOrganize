@@ -34,7 +34,7 @@
   </header>
 
   <main class="desk">
-    <div class="binder" id="binder" data-section="calendar" data-lang="{{.Lang}}" data-week-start="{{.WeekStart}}">
+    <div class="binder" id="binder" data-section="calendar" data-lang="{{.Lang}}" data-week-start="{{.WeekStart}}" data-alphabet="{{.Alphabet}}">
       <div class="cover">
         <div class="spread">
           <section class="page page-start" id="page-start" aria-live="polite"></section>
@@ -91,6 +91,47 @@
       </div>
       <label class="check"><input type="checkbox" name="done"> {{t .Lang "task.isDone"}}</label>
       <label class="wide">{{t .Lang "event.notes"}}<textarea name="notes" rows="3" maxlength="20000"></textarea></label>
+      <p class="dialog-error" role="alert"></p>
+      <div class="buttons">
+        <button type="button" class="danger" data-action="delete">{{t .Lang "event.delete"}}</button>
+        <span class="spacer"></span>
+        <button type="submit" value="cancel" formnovalidate>{{t .Lang "event.cancel"}}</button>
+        <button type="submit" value="save" class="primary">{{t .Lang "event.save"}}</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="event-dialog contact-dialog" id="contact-dialog">
+    <form method="dialog" novalidate>
+      <h2 class="dialog-title"></h2>
+      <div class="row">
+        <label>{{t .Lang "contact.givenName"}}<input name="givenName" maxlength="500" autocomplete="off"></label>
+        <label>{{t .Lang "contact.familyName"}}<input name="familyName" maxlength="500" autocomplete="off"></label>
+      </div>
+      <div class="row">
+        <label>{{t .Lang "contact.organization"}}<input name="organization" maxlength="500" autocomplete="off"></label>
+        <label>{{t .Lang "contact.jobTitle"}}<input name="jobTitle" maxlength="500" autocomplete="off"></label>
+      </div>
+      <fieldset>
+        <legend>{{t .Lang "contact.fields"}}</legend>
+        <div class="fields"></div>
+        <div class="add-fields">
+          <button type="button" data-add-field="phone">+ {{t .Lang "contact.kind.phone"}}</button>
+          <button type="button" data-add-field="email">+ {{t .Lang "contact.kind.email"}}</button>
+          <button type="button" data-add-field="address">+ {{t .Lang "contact.kind.address"}}</button>
+          <button type="button" data-add-field="url">+ {{t .Lang "contact.kind.url"}}</button>
+        </div>
+      </fieldset>
+      <div class="row">
+        <label>{{t .Lang "contact.birthday"}}<input type="date" name="birthday"></label>
+        <label class="check"><input type="checkbox" name="noYear"> {{t .Lang "contact.noYear"}}</label>
+      </div>
+      <label class="wide">{{t .Lang "event.notes"}}<textarea name="notes" rows="2" maxlength="20000"></textarea></label>
+      <datalist id="contact-labels">
+        <option value="{{t .Lang "contact.label.work"}}"></option>
+        <option value="{{t .Lang "contact.label.home"}}"></option>
+        <option value="{{t .Lang "contact.label.mobile"}}"></option>
+      </datalist>
       <p class="dialog-error" role="alert"></p>
       <div class="buttons">
         <button type="button" class="danger" data-action="delete">{{t .Lang "event.delete"}}</button>

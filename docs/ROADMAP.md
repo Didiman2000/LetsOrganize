@@ -60,7 +60,8 @@ MCP-Schnittstelle für externe KI-Agenten (siehe Phase 7). Später: Anrufe, Gmai
 - [ ] Kalender: Wiederholungen, Erinnerungen, Verschieben per Ziehen
 - [x] Aufgaben: anlegen per Schnell-Eingabe, abhaken, Fälligkeit, Priorität, Notiz, erledigte Liste (Schnittstelle /api/tasks)
 - [ ] Aufgaben: Reihenfolge per Ziehen, Kategorien
-- [ ] Adressen: Register A–Z (je Sprache passendes Alphabet), Suche
+- [x] Adressen: Register je Sprache (A–Z, arabisches Alphabet), Suche in Namen, Firma und Feldern, Telefon/E-Mail/Anschrift/Webseite, Geburtstag mit oder ohne Jahr (Schnittstelle /api/contacts)
+- [ ] Adressen: Fotos, Gruppen, Export als vCard
 - [ ] Notizen, Planer, Jahrestage
 
 ### Phase 4 – Google-Abgleich
