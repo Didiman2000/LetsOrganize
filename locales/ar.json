@@ -138,6 +138,12 @@
     "google.close": "إغلاق",
     "google.connected": "تم الاتصال.",
     "google.failed": "فشل تسجيل الدخول إلى Google:",
-    "google.error": "خطأ في المزامنة:"
+    "google.error": "خطأ في المزامنة:",
+    "cal.label": "التقويم",
+    "cal.list": "التقويمات المراد مزامنتها وعرضها",
+    "cal.readonly": "للقراءة فقط",
+    "cal.readonlyHint": "للقراءة فقط – موعد من التقويم «{name}».",
+    "cal.moveLater": "لا يمكن بعد تغيير تقويم موعد موجود.",
+    "cal.local": "في LetsOrganize فقط"
   }
 }

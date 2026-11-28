@@ -28,22 +28,25 @@ type fakeGoogle struct {
 	refresh   string
 	expireNow bool // nächstes Zugangstoken sofort ungültig
 	revoked   bool
-	events    map[string]*Event
-	changed   map[string]int // id → Version, in der zuletzt geändert
+	events    map[string]*Event // Schlüssel: Kalender + "|" + id
+	changed   map[string]int    // Schlüssel wie events → Version, in der zuletzt geändert
+	calendars []CalendarListEntry
 	version   int
 	seq       int
 	requests  []string
 }
 
 func newFakeGoogle(t *testing.T) *fakeGoogle {
-	f := &fakeGoogle{t: t, verifiers: map[string]string{}, events: map[string]*Event{}, changed: map[string]int{}, refresh: "refresh-1"}
+	f := &fakeGoogle{t: t, verifiers: map[string]string{}, events: map[string]*Event{}, changed: map[string]int{}, refresh: "refresh-1",
+		calendars: []CalendarListEntry{{ID: "andreas@example.com", Summary: "andreas@example.com", Primary: true, Selected: true, AccessRole: "owner", BackgroundColor: "#4285f4"}}}
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /token", f.token)
 	mux.HandleFunc("GET /userinfo", f.userinfo)
-	mux.HandleFunc("GET /calendar/calendars/primary/events", f.list)
-	mux.HandleFunc("POST /calendar/calendars/primary/events", f.insert)
-	mux.HandleFunc("PUT /calendar/calendars/primary/events/{id}", f.update)
-	mux.HandleFunc("DELETE /calendar/calendars/primary/events/{id}", f.delete)
+	mux.HandleFunc("GET /calendar/users/me/calendarList", f.calendarList)
+	mux.HandleFunc("GET /calendar/calendars/{cal}/events", f.list)
+	mux.HandleFunc("POST /calendar/calendars/{cal}/events", f.insert)
+	mux.HandleFunc("PUT /calendar/calendars/{cal}/events/{id}", f.update)
+	mux.HandleFunc("DELETE /calendar/calendars/{cal}/events/{id}", f.delete)
 	mux.HandleFunc("POST /revoke", func(w http.ResponseWriter, r *http.Request) {
 		f.mu.Lock()
 		f.revoked = true
@@ -138,12 +141,57 @@ func (f *fakeGoogle) userinfo(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]any{"email": "andreas@example.com", "email_verified": true})
 }
 
-func (f *fakeGoogle) touch(e *Event) {
+// calKey bildet "primary" und die E-Mail-Adresse auf denselben Kalender ab.
+func calKey(cal string) string {
+	if cal == "andreas@example.com" {
+		return "primary"
+	}
+	return cal
+}
+
+func (f *fakeGoogle) touchIn(cal string, e *Event) {
 	f.version++
 	e.ETag = fmt.Sprintf(`"%d"`, f.version)
 	e.Updated = time.Now().UTC().Add(time.Duration(f.version) * time.Millisecond).Format(time.RFC3339Nano)
-	f.changed[e.ID] = f.version
-	f.events[e.ID] = e
+	k := calKey(cal) + "|" + e.ID
+	f.changed[k] = f.version
+	f.events[k] = e
+}
+
+func (f *fakeGoogle) touch(e *Event) { f.touchIn("primary", e) }
+
+func (f *fakeGoogle) calendarList(w http.ResponseWriter, r *http.Request) {
+	if !f.authorized(w, r) {
+		return
+	}
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	json.NewEncoder(w).Encode(map[string]any{"items": f.calendars})
+}
+
+// putIn legt einen Termin direkt in einem Kalender „bei Google“ an oder ändert ihn.
+func (f *fakeGoogle) putIn(cal string, e Event) *Event {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if e.ID == "" {
+		f.seq++
+		e.ID = fmt.Sprintf("g%d", f.seq)
+	}
+	if e.Status == "" {
+		e.Status = "confirmed"
+	}
+	f.touchIn(cal, &e)
+	return &e
+}
+
+func (f *fakeGoogle) getIn(cal, id string) *Event {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if e := f.events[calKey(cal)+"|"+id]; e != nil {
+		c := *e
+		return &c
+	}
+	return nil
 }
 
 // put legt einen Termin direkt „bei Google“ an oder ändert ihn (wie in der Google-Oberfläche).
@@ -161,15 +209,7 @@ func (f *fakeGoogle) put(e Event) *Event {
 	return &e
 }
 
-func (f *fakeGoogle) get(id string) *Event {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	if e := f.events[id]; e != nil {
-		c := *e
-		return &c
-	}
-	return nil
-}
+func (f *fakeGoogle) get(id string) *Event { return f.getIn("primary", id) }
 
 func (f *fakeGoogle) list(w http.ResponseWriter, r *http.Request) {
 	if !f.authorized(w, r) {
@@ -186,9 +226,10 @@ func (f *fakeGoogle) list(w http.ResponseWriter, r *http.Request) {
 		fmt.Sscanf(tok, "v%d", &since)
 	}
 	page := EventPage{Items: []Event{}, NextSyncToken: fmt.Sprintf("v%d", f.version)}
-	for id, v := range f.changed {
-		if v > since {
-			page.Items = append(page.Items, *f.events[id])
+	prefix := calKey(r.PathValue("cal")) + "|"
+	for k, v := range f.changed {
+		if v > since && strings.HasPrefix(k, prefix) {
+			page.Items = append(page.Items, *f.events[k])
 		}
 	}
 	json.NewEncoder(w).Encode(page)
@@ -208,7 +249,7 @@ func (f *fakeGoogle) insert(w http.ResponseWriter, r *http.Request) {
 	f.seq++
 	e.ID = fmt.Sprintf("g%d", f.seq)
 	e.Status = "confirmed"
-	f.touch(&e)
+	f.touchIn(r.PathValue("cal"), &e)
 	f.mu.Unlock()
 	json.NewEncoder(w).Encode(e)
 }
@@ -217,10 +258,10 @@ func (f *fakeGoogle) update(w http.ResponseWriter, r *http.Request) {
 	if !f.authorized(w, r) {
 		return
 	}
-	id := r.PathValue("id")
+	id, cal := r.PathValue("id"), r.PathValue("cal")
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	old := f.events[id]
+	old := f.events[calKey(cal)+"|"+id]
 	if old == nil || old.Status == "cancelled" {
 		http.Error(w, "not found", 404)
 		return
@@ -232,7 +273,7 @@ func (f *fakeGoogle) update(w http.ResponseWriter, r *http.Request) {
 	var e Event
 	json.NewDecoder(r.Body).Decode(&e)
 	e.ID, e.Status = id, "confirmed"
-	f.touch(&e)
+	f.touchIn(cal, &e)
 	json.NewEncoder(w).Encode(e)
 }
 
@@ -242,13 +283,14 @@ func (f *fakeGoogle) delete(w http.ResponseWriter, r *http.Request) {
 	}
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	e := f.events[r.PathValue("id")]
+	cal := r.PathValue("cal")
+	e := f.events[calKey(cal)+"|"+r.PathValue("id")]
 	if e == nil {
 		http.Error(w, "not found", 404)
 		return
 	}
 	e.Status = "cancelled"
-	f.touch(e)
+	f.touchIn(cal, e)
 	w.WriteHeader(204)
 }
 

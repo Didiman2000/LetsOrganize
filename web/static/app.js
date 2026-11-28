@@ -143,6 +143,43 @@
     return `${time}  ${e.title}`;
   }
 
+  // ---------- Kalender ----------
+
+  let calendars = [];
+  const calOf = (id) => calendars.find((c) => c.remoteId === (id || "primary")) || null;
+  const isHex = (c) => /^#[0-9a-fA-F]{6}$/.test(c || "");
+
+  async function loadCalendars() {
+    try {
+      calendars = await api("GET", "/api/calendars");
+    } catch (_) {
+      calendars = [];
+    }
+  }
+
+  function fillCalendarPick(e) {
+    const pick = form.querySelector(".calendar-pick");
+    const sel = form.elements.calendarId;
+    const cal = e ? calOf(e.calendarId) : null;
+    const writable = calendars.filter((c) => c.enabled && c.writable);
+    sel.replaceChildren(...writable.map((c) => el("option", { value: c.remoteId }, c.name)));
+    if (cal && !writable.includes(cal)) sel.append(el("option", { value: cal.remoteId }, cal.name));
+    pick.hidden = calendars.length === 0;
+    sel.value = cal ? cal.remoteId : "primary";
+    // Bestehende Termine können noch nicht in einen anderen Kalender wechseln.
+    sel.disabled = !!e;
+    pick.title = e ? t("cal.moveLater") : "";
+    const readonly = !!(cal && !cal.writable);
+    const hint = form.querySelector(".readonly-hint");
+    hint.hidden = !readonly;
+    hint.textContent = readonly ? t("cal.readonlyHint", { name: cal.name }) : "";
+    form.querySelectorAll("input, textarea, select").forEach((n) => {
+      if (n.name !== "calendarId") n.disabled = readonly;
+    });
+    dialog.querySelector("button[value=save]").hidden = readonly;
+    return readonly;
+  }
+
   // ---------- Wiederholung ----------
 
   const dayCodes = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"]; // Montag = 0
@@ -234,6 +271,7 @@
     form.reset();
     form.dataset.id = e ? e.id : "";
     form.dataset.occurrence = occurrence;
+    form.dataset.calendarId = e ? e.calendarId || "" : "";
     const recurring = !!(e && e.rrule);
     dialog.querySelector(".dialog-title").textContent = t(e ? "event.edit" : "event.new");
     const del = dialog.querySelector("[data-action=delete]");
@@ -262,6 +300,10 @@
     fillRepeat(e ? e.rrule : "", e && e.allDay ? new Date(s.getUTCFullYear(), s.getUTCMonth(), s.getUTCDate()) : s);
     syncAllDay();
     syncRepeat();
+    if (fillCalendarPick(e)) {
+      del.hidden = true;
+      dialog.querySelector("[data-action=delete-occurrence]").hidden = true;
+    }
     dialog.showModal();
     form.elements.title.focus();
   }
@@ -293,6 +335,7 @@
       end: end.toISOString(),
       rrule: buildRule(),
       timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || "",
+      calendarId: calendars.length ? form.elements.calendarId.value : (form.dataset.calendarId || ""),
     };
   }
 
@@ -343,6 +386,13 @@
     });
   }
 
+  // Farbe des Kalenders über eine CSS-Variable (erlaubt unter der CSP, anders als style="…").
+  function withColor(node, e) {
+    const cal = calOf(e.calendarId);
+    if (cal && isHex(cal.color)) node.style.setProperty("--event-color", cal.color);
+    return node;
+  }
+
   function dayBlock(d) {
     const today = sameDay(d, new Date());
     const dow = d.getDay();
@@ -350,9 +400,10 @@
     const list = eventsOn(d);
     const items = list.length
       ? list.map((e) =>
-          el("button", { type: "button", class: `event${e.allDay ? " all-day" : ""}`, title: e.location || e.title,
+          withColor(el("button", { type: "button", class: `event${e.allDay ? " all-day" : ""}${calOf(e.calendarId) && !calOf(e.calendarId).writable ? " readonly" : ""}`,
+            title: [e.title, e.location, calOf(e.calendarId) && calendars.length > 1 ? calOf(e.calendarId).name : ""].filter(Boolean).join(" · "),
             onclick: (ev) => { ev.stopPropagation(); openDialog(e); } }, eventLabel(e, d),
-            e.rrule ? el("span", { class: "repeat-mark", "aria-label": t("repeat.symbol"), title: t("repeat.symbol") }, "↻") : ""))
+            e.rrule ? el("span", { class: "repeat-mark", "aria-label": t("repeat.symbol"), title: t("repeat.symbol") }, "↻") : ""), e))
       : [el("div", { class: "day-empty" }, t("calendar.empty"))];
     const block = el(
       "div",
@@ -879,6 +930,29 @@
       detail = t("google.firstSync");
     }
     q(".google-detail").textContent = st.running ? t("google.syncing") : detail;
+    const box = q(".google-calendars");
+    box.hidden = !st.connected || calendars.length === 0;
+    box.querySelector("ul").replaceChildren(...calendars.map((c) => {
+      const check = el("input", { type: "checkbox" });
+      check.checked = c.enabled;
+      check.addEventListener("change", async () => {
+        check.disabled = true;
+        try {
+          await api("PUT", `/api/calendars/${c.id}`, { enabled: check.checked });
+          c.enabled = check.checked;
+          if (check.checked) api("POST", "/api/google/sync", {}).then(reloadAll, () => {});
+          await loadWeek();
+          render(false);
+        } catch (_) {
+          check.checked = !check.checked;
+        }
+        check.disabled = false;
+      });
+      const swatch = el("span", { class: "swatch" });
+      if (isHex(c.color)) swatch.style.setProperty("--cal-color", c.color);
+      return el("li", {}, el("label", {}, check, swatch, el("span", {}, c.name),
+        c.writable ? "" : el("span", { class: "role" }, `(${t("cal.readonly")})`)));
+    }));
     q(".google-problems").replaceChildren(...((st.report && st.report.problems) || []).map((p) => el("li", {}, p)));
     q(".dialog-error").textContent = error || (st.lastError ? `${t("google.error")} ${st.lastError}` : "");
     q("[data-action=connect]").hidden = !st.configured || st.connected;
@@ -890,14 +964,14 @@
   }
 
   async function reloadAll() {
-    await Promise.all([loadWeek(), loadTasks(), loadContacts(), loadNotes(), loadPlanner(), loadAnniversaries()]);
+    await Promise.all([loadCalendars(), loadWeek(), loadTasks(), loadContacts(), loadNotes(), loadPlanner(), loadAnniversaries()]);
     render(false);
   }
 
   if (gButton && gDialog) {
     gButton.addEventListener("click", async () => {
       gDisconnectArmed = false;
-      await loadGoogle();
+      await Promise.all([loadGoogle(), loadCalendars()]);
       renderGoogle();
       gDialog.showModal();
     });
@@ -1257,6 +1331,6 @@
     .then((r) => r.json())
     .then((data) => { messages = data.messages || {}; })
     .catch(() => {})
-    .then(() => Promise.all([loadWeek(), loadTasks(), loadContacts(), loadNotes(), loadPlanner(), loadAnniversaries(), loadGoogle()]))
+    .then(() => Promise.all([loadCalendars(), loadWeek(), loadTasks(), loadContacts(), loadNotes(), loadPlanner(), loadAnniversaries(), loadGoogle()]))
     .finally(() => { render(false); handleGoogleReturn(); });
 })();

@@ -98,6 +98,7 @@ func New(cfg Config) (*Server, error) {
 		s.routesTasks()
 		s.routesContacts()
 		s.routesRegisters()
+		s.routesCalendars()
 		if cfg.Google != nil {
 			s.routesGoogle()
 		}

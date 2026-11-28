@@ -20,32 +20,35 @@ const PrimaryCalendar = "primary"
 
 // Report fasst einen Abgleich zusammen.
 type Report struct {
-	Pulled   int      `json:"pulled"`   // von Google übernommen
-	Deleted  int      `json:"deleted"`  // bei Google gelöscht
-	Pushed   int      `json:"pushed"`   // zu Google hochgeladen
-	Removed  int      `json:"removed"`  // bei Google gelöscht, weil lokal gelöscht
-	Kept     int      `json:"kept"`     // Konflikte, bei denen die lokale Änderung neuer war
-	Problems []string `json:"problems"` // einzelne Termine, die nicht abgeglichen werden konnten
+	Pulled    int      `json:"pulled"`    // von Google übernommen
+	Deleted   int      `json:"deleted"`   // bei Google gelöscht
+	Pushed    int      `json:"pushed"`    // zu Google hochgeladen
+	Removed   int      `json:"removed"`   // bei Google gelöscht, weil lokal gelöscht
+	Kept      int      `json:"kept"`      // Konflikte, bei denen die lokale Änderung neuer war
+	Calendars int      `json:"calendars"` // abgeglichene Kalender
+	Problems  []string `json:"problems"`  // einzelne Termine, die nicht abgeglichen werden konnten
 }
 
 const timeLayoutUTC = "2006-01-02T15:04:05Z"
 
-// SyncCalendar gleicht den Hauptkalender in beide Richtungen ab:
-// erst die Änderungen von Google holen, dann lokale Änderungen hochladen.
-// Bei Konflikten gewinnt die jüngere Änderung.
-func SyncCalendar(ctx context.Context, st *store.Store, api *API, userID, accountID int64) (*Report, error) {
-	rep := &Report{Problems: []string{}}
-	resource := "calendar:" + PrimaryCalendar
+// SyncCalendar gleicht einen Kalender in beide Richtungen ab: erst die
+// Änderungen von Google holen, dann lokale Änderungen hochladen (nicht bei
+// nur lesbaren Kalendern). Bei Konflikten gewinnt die jüngere Änderung.
+func SyncCalendar(ctx context.Context, st *store.Store, api *API, userID, accountID int64, calID string, writable bool, rep *Report) error {
+	if rep.Problems == nil {
+		rep.Problems = []string{}
+	}
+	resource := "calendar:" + calID
 	state, err := st.GetSyncState(ctx, accountID, resource)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	items, next, err := api.ListEvents(ctx, PrimaryCalendar, state.Token)
+	items, next, err := api.ListEvents(ctx, calID, state.Token)
 	if errors.Is(err, ErrSyncTokenExpired) {
-		items, next, err = api.ListEvents(ctx, PrimaryCalendar, "")
+		items, next, err = api.ListEvents(ctx, calID, "")
 	}
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// Erst Serien und Einzeltermine, dann Vorkommen von Serien – so ist die
@@ -56,25 +59,24 @@ func SyncCalendar(ctx context.Context, st *store.Store, api *API, userID, accoun
 			instances = append(instances, ge)
 			continue
 		}
-		if err := pullOne(ctx, st, userID, accountID, ge, rep); err != nil {
+		if err := pullOne(ctx, st, userID, accountID, calID, ge, rep); err != nil {
 			rep.Problems = append(rep.Problems, fmt.Sprintf("%s: %v", nameOf(ge), err))
 		}
 	}
 	for _, ge := range instances {
-		if err := pullOne(ctx, st, userID, accountID, ge, rep); err != nil {
+		if err := pullOne(ctx, st, userID, accountID, calID, ge, rep); err != nil {
 			rep.Problems = append(rep.Problems, fmt.Sprintf("%s: %v", nameOf(ge), err))
 		}
 	}
 	if next != "" {
 		if err := st.SetSyncState(ctx, accountID, resource, next); err != nil {
-			return nil, err
+			return err
 		}
 	}
-
-	if err := pushCalendar(ctx, st, api, userID, accountID, rep); err != nil {
-		return rep, err
+	if !writable {
+		return nil
 	}
-	return rep, nil
+	return pushCalendar(ctx, st, api, userID, accountID, calID, rep)
 }
 
 func nameOf(ge Event) string {
@@ -84,8 +86,8 @@ func nameOf(ge Event) string {
 	return "Termin " + ge.ID
 }
 
-func pullOne(ctx context.Context, st *store.Store, userID, accountID int64, ge Event, rep *Report) error {
-	local, err := st.EventByRemote(ctx, userID, PrimaryCalendar, ge.ID)
+func pullOne(ctx context.Context, st *store.Store, userID, accountID int64, calID string, ge Event, rep *Report) error {
+	local, err := st.EventByRemote(ctx, userID, calID, ge.ID)
 	if err != nil && !errors.Is(err, store.ErrNotFound) {
 		return err
 	}
@@ -102,18 +104,18 @@ func pullOne(ctx context.Context, st *store.Store, userID, accountID int64, ge E
 			}
 			if local != nil {
 				// Es gab einen abweichenden Einzeltermin: der entfällt.
-				if err := st.RemoteDeleted(ctx, userID, PrimaryCalendar, ge.ID); err != nil {
+				if err := st.RemoteDeleted(ctx, userID, calID, ge.ID); err != nil {
 					return err
 				}
 			}
 			rep.Deleted++
-			return st.AddRemoteExdate(ctx, userID, PrimaryCalendar, ge.RecurringEventID, t)
+			return st.AddRemoteExdate(ctx, userID, calID, ge.RecurringEventID, t)
 		}
 		if local == nil || local.Deleted {
 			return nil
 		}
 		rep.Deleted++
-		return st.RemoteDeleted(ctx, userID, PrimaryCalendar, ge.ID)
+		return st.RemoteDeleted(ctx, userID, calID, ge.ID)
 	}
 
 	se, err := fromGoogle(ge)
@@ -128,11 +130,11 @@ func pullOne(ctx context.Context, st *store.Store, userID, accountID int64, ge E
 		}
 	}
 	rep.Pulled++
-	return st.ApplyRemoteEvent(ctx, userID, accountID, PrimaryCalendar, se)
+	return st.ApplyRemoteEvent(ctx, userID, accountID, calID, se)
 }
 
-func pushCalendar(ctx context.Context, st *store.Store, api *API, userID, accountID int64, rep *Report) error {
-	dirty, err := st.DirtyEvents(ctx, userID)
+func pushCalendar(ctx context.Context, st *store.Store, api *API, userID, accountID int64, calID string, rep *Report) error {
+	dirty, err := st.DirtyEvents(ctx, userID, calID)
 	if err != nil {
 		return err
 	}
@@ -146,18 +148,18 @@ func pushCalendar(ctx context.Context, st *store.Store, api *API, userID, accoun
 			// Nie bei Google gewesen: nur vormerken, dass nichts mehr zu tun ist.
 			res = &Event{}
 		case se.Deleted:
-			if err = api.DeleteEvent(ctx, PrimaryCalendar, se.RemoteID); err == nil {
+			if err = api.DeleteEvent(ctx, calID, se.RemoteID); err == nil {
 				rep.Removed++
 				res = &Event{ID: se.RemoteID, ETag: se.ETag}
 			}
 		case se.RemoteID == "":
-			if res, err = api.InsertEvent(ctx, PrimaryCalendar, toGoogle(se)); err == nil {
+			if res, err = api.InsertEvent(ctx, calID, toGoogle(se)); err == nil {
 				rep.Pushed++
 			}
 		default:
 			ge := toGoogle(se)
 			ge.ID = se.RemoteID
-			res, err = api.UpdateEvent(ctx, PrimaryCalendar, ge, se.ETag)
+			res, err = api.UpdateEvent(ctx, calID, ge, se.ETag)
 			if IsStatus(err, http.StatusPreconditionFailed) {
 				// Bei Google zwischendurch geändert: beim nächsten Abgleich entscheiden.
 				rep.Problems = append(rep.Problems, fmt.Sprintf("„%s“: bei Google zwischendurch geändert, nächster Abgleich klärt das", se.Title))
@@ -166,7 +168,7 @@ func pushCalendar(ctx context.Context, st *store.Store, api *API, userID, accoun
 			if IsStatus(err, http.StatusNotFound, http.StatusGone) {
 				// Bei Google gelöscht, lokal geändert: neu anlegen, damit nichts verloren geht.
 				ge.ID, ge.ETag = "", ""
-				res, err = api.InsertEvent(ctx, PrimaryCalendar, ge)
+				res, err = api.InsertEvent(ctx, calID, ge)
 			}
 			if err == nil {
 				rep.Pushed++
@@ -180,7 +182,7 @@ func pushCalendar(ctx context.Context, st *store.Store, api *API, userID, accoun
 			rep.Problems = append(rep.Problems, fmt.Sprintf("„%s“: %v", se.Title, err))
 			continue
 		}
-		if err := st.MarkEventSynced(ctx, se.ID, accountID, PrimaryCalendar, res.ID, res.ETag, se.UpdatedAt); err != nil {
+		if err := st.MarkEventSynced(ctx, se.ID, accountID, calID, res.ID, res.ETag, se.UpdatedAt); err != nil {
 			return err
 		}
 	}

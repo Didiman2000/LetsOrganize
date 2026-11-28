@@ -644,6 +644,19 @@ body[data-tab-shape="notched"] .tab { border-start-end-radius: 14px 4px; border-
 .google-problems { margin: 0; padding-inline-start: 18px; font-size: 13px; color: var(--lo-color-accent); }
 .google-problems:empty { display: none; }
 
+/* ---------- Kalender ---------- */
+
+.event { border-inline-start: 3px solid var(--event-color, transparent); padding-inline-start: 4px; }
+.event.all-day { background: color-mix(in srgb, var(--event-color, var(--section-color, var(--lo-color-accent))) 22%, var(--lo-color-paper)); }
+.event.readonly { color: var(--lo-color-ink-soft); }
+.readonly-hint { margin: 0; font-size: 13px; color: var(--lo-color-ink-soft); font-style: italic; }
+.google-calendars { margin: 0; padding: 10px; border: 1px solid var(--lo-color-line); border-radius: 6px; max-block-size: 260px; overflow-y: auto; }
+.google-calendars legend { padding-inline: 4px; font-size: 13px; color: var(--lo-color-ink-soft); }
+.google-calendars ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.google-calendars label { display: flex; flex-direction: row; align-items: center; gap: 8px; color: var(--lo-color-ink); font-size: 14px; cursor: pointer; }
+.google-calendars .swatch { background: var(--cal-color, #9a9a9a); border-radius: 3px; }
+.google-calendars .role { color: var(--lo-color-ink-soft); font-size: 12px; }
+
 /* ---------- Rechts nach links ---------- */
 
 [dir="rtl"] .page-start::after { background: linear-gradient(to left,  transparent, rgba(0, 0, 0, 0.13)); }

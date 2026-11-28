@@ -5,8 +5,10 @@ package google
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -263,5 +265,123 @@ func TestTokenRefreshAndRevoke(t *testing.T) {
 	}
 	if _, err := x.m.Sync(x.ctx, x.user); err == nil {
 		t.Error("Abgleich ohne Verbindung möglich")
+	}
+}
+
+func TestSyncMultipleCalendars(t *testing.T) {
+	x := newSyncFixture(t)
+	ctx, st, f := x.ctx, x.st, x.f
+	f.mu.Lock()
+	f.calendars = append(f.calendars,
+		CalendarListEntry{ID: "team@group.calendar.google.com", Summary: "Team", AccessRole: "writer", Selected: true, BackgroundColor: "#0b8043"},
+		CalendarListEntry{ID: "de.german#holiday@group.v.calendar.google.com", Summary: "Feiertage in Deutschland", AccessRole: "reader", Selected: true, BackgroundColor: "#7986cb"},
+		CalendarListEntry{ID: "alt@group.calendar.google.com", Summary: "Altes Projekt", AccessRole: "owner", Selected: false, BackgroundColor: "javascript:alert(1)"},
+	)
+	f.mu.Unlock()
+	const team, holiday = "team@group.calendar.google.com", "de.german#holiday@group.v.calendar.google.com"
+	f.putIn(team, Event{Summary: "Teamrunde",
+		Start: &EventTime{DateTime: "2026-12-02T14:00:00+01:00", TimeZone: "Europe/Berlin"},
+		End:   &EventTime{DateTime: "2026-12-02T15:00:00+01:00", TimeZone: "Europe/Berlin"}})
+	f.putIn(holiday, Event{Summary: "2. Advent", Start: &EventTime{Date: "2026-12-06"}, End: &EventTime{Date: "2026-12-07"}})
+	f.putIn("alt@group.calendar.google.com", Event{Summary: "Altlast", Start: &EventTime{Date: "2026-12-03"}, End: &EventTime{Date: "2026-12-04"}})
+
+	rep := x.sync(t)
+	if rep.Calendars != 3 || rep.Pulled != 2 {
+		t.Errorf("Abgleich: %+v", rep)
+	}
+	cals, _ := st.ListCalendars(ctx, x.user)
+	if len(cals) != 4 || !cals[0].Primary || cals[0].RemoteID != "primary" {
+		t.Fatalf("Kalender: %+v", cals)
+	}
+	byName := map[string]store.Calendar{}
+	for _, c := range cals {
+		byName[c.Name] = c
+	}
+	if byName["Altes Projekt"].Enabled || byName["Altes Projekt"].Color != "" {
+		t.Errorf("nicht eingeblendeter Kalender oder unsichere Farbe: %+v", byName["Altes Projekt"])
+	}
+	if byName["Feiertage in Deutschland"].Writable || !byName["Team"].Writable {
+		t.Error("Schreibrechte falsch")
+	}
+
+	week := x.week(t, 2026, 11, 30)
+	got := map[string]string{}
+	for _, e := range week {
+		got[e.Title] = e.CalendarID
+	}
+	if got["Teamrunde"] != team || got["2. Advent"] != holiday {
+		t.Errorf("Woche: %v", got)
+	}
+	if _, ok := got["Altlast"]; ok {
+		t.Error("Termin aus ausgeschaltetem Kalender sichtbar")
+	}
+
+	// Neuer Termin im Teamkalender landet dort bei Google.
+	s := time.Date(2026, 12, 3, 9, 0, 0, 0, time.UTC)
+	if _, err := st.CreateEvent(ctx, x.user, store.Event{Title: "Planung", Start: s, End: s.Add(time.Hour), CalendarID: team}); err != nil {
+		t.Fatal(err)
+	}
+	x.sync(t)
+	found := false
+	f.mu.Lock()
+	for k, e := range f.events {
+		if e.Summary == "Planung" && strings.HasPrefix(k, team+"|") {
+			found = true
+		}
+	}
+	f.mu.Unlock()
+	if !found {
+		t.Error("Termin nicht im Teamkalender bei Google")
+	}
+
+	// Nur lesbarer Kalender: nicht anlegen, nicht ändern, nicht löschen.
+	var ve *store.ValidationError
+	if _, err := st.CreateEvent(ctx, x.user, store.Event{Title: "x", Start: s, End: s.Add(time.Hour), CalendarID: holiday}); !errors.As(err, &ve) {
+		t.Errorf("Anlegen im Feiertagskalender: %v", err)
+	}
+	var advent store.Event
+	for _, e := range x.week(t, 2026, 11, 30) {
+		if e.Title == "2. Advent" {
+			advent = e
+		}
+	}
+	advent.Title = "geändert"
+	if _, err := st.UpdateEvent(ctx, x.user, advent); !errors.As(err, &ve) {
+		t.Errorf("Ändern im Feiertagskalender: %v", err)
+	}
+	if err := st.DeleteEvent(ctx, x.user, advent.ID); !errors.As(err, &ve) {
+		t.Errorf("Löschen im Feiertagskalender: %v", err)
+	}
+	if _, err := st.CreateEvent(ctx, x.user, store.Event{Title: "x", Start: s, End: s.Add(time.Hour), CalendarID: "gibt-es-nicht"}); !errors.As(err, &ve) {
+		t.Errorf("unbekannter Kalender: %v", err)
+	}
+
+	// Ausschalten: Termine verschwinden aus der Ansicht, Kalender wird nicht mehr abgefragt.
+	if _, err := st.SetCalendarEnabled(ctx, x.user, byName["Team"].ID, false); err != nil {
+		t.Fatal(err)
+	}
+	for _, e := range x.week(t, 2026, 11, 30) {
+		if e.CalendarID == team {
+			t.Errorf("ausgeschalteter Kalender sichtbar: %s", e.Title)
+		}
+	}
+	before := f.count("GET /calendar/calendars/" + team)
+	x.sync(t)
+	if f.count("GET /calendar/calendars/"+team) != before {
+		t.Error("ausgeschalteter Kalender wird abgefragt")
+	}
+
+	// Kalender bei Google entfernt: verschwindet samt Terminen.
+	f.mu.Lock()
+	f.calendars = f.calendars[:1]
+	f.mu.Unlock()
+	x.sync(t)
+	if cals, _ := st.ListCalendars(ctx, x.user); len(cals) != 1 {
+		t.Errorf("nach Entfernen: %+v", cals)
+	}
+	for _, e := range x.week(t, 2026, 11, 30) {
+		if e.CalendarID == holiday {
+			t.Error("Termin aus entferntem Kalender sichtbar")
+		}
 	}
 }

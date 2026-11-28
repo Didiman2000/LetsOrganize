@@ -138,6 +138,12 @@
     "google.close": "Schließen",
     "google.connected": "Verbindung hergestellt.",
     "google.failed": "Anmeldung bei Google fehlgeschlagen:",
-    "google.error": "Fehler beim Abgleich:"
+    "google.error": "Fehler beim Abgleich:",
+    "cal.label": "Kalender",
+    "cal.list": "Kalender abgleichen und anzeigen",
+    "cal.readonly": "nur lesen",
+    "cal.readonlyHint": "Nur lesbar – Termin aus dem Kalender „{name}“.",
+    "cal.moveLater": "Der Kalender eines bestehenden Termins lässt sich noch nicht ändern.",
+    "cal.local": "Nur in LetsOrganize"
   }
 }

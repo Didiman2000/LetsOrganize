@@ -75,7 +75,8 @@ MCP-Schnittstelle für externe KI-Agenten (siehe Phase 7). Später: Anrufe, Gmai
 - [ ] Aufgaben: Google Tasks
 - [x] Konfliktregel: jüngere Änderung gewinnt; bei Google gelöscht, lokal geändert → neu anlegen
 - [x] Offline-Betrieb: lokale Änderungen werden vorgemerkt und beim nächsten Abgleich übertragen
-- [ ] Weitere Kalender außer dem Hauptkalender
+- [x] Mehrere Kalender: Kalenderliste von Google, Auswahl je Kalender, Farben, Kalenderwahl beim Anlegen, nur lesbare Kalender (Migration 0005)
+- [ ] Termin in einen anderen Kalender verschieben
 
 ### Phase 5 – Import der Altdaten
 - [ ] CSV-Import je Bereich mit Feldzuordnung und Vorschau

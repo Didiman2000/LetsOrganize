@@ -255,7 +255,7 @@ func (m *Manager) Sync(ctx context.Context, userID int64) (*Report, error) {
 		return nil, fmt.Errorf("Google-Token nicht lesbar – bitte neu verbinden: %w", err)
 	}
 	api := m.NewAPI(m.HTTP, ts)
-	rep, err := SyncCalendar(ctx, m.Store, api, userID, acc.ID)
+	rep, err := syncAllCalendars(ctx, m.Store, api, userID, acc.ID)
 	m.setLast(userID, func(s *Status) {
 		s.LastSync = time.Now()
 		s.Report = rep
@@ -289,4 +289,52 @@ func (m *Manager) Run(ctx context.Context, userIDs func() []int64, every time.Du
 		case <-t.C:
 		}
 	}
+}
+
+// syncAllCalendars holt die Kalenderliste und gleicht jeden eingeschalteten
+// Kalender ab. Fehler einzelner Kalender werden gemeldet, ohne die anderen
+// aufzuhalten; ein abgelaufener Zugang bricht ab.
+func syncAllCalendars(ctx context.Context, st *store.Store, api *API, userID, accountID int64) (*Report, error) {
+	rep := &Report{Problems: []string{}}
+	list, err := api.ListCalendars(ctx)
+	if err != nil {
+		return rep, err
+	}
+	var remote []store.RemoteCalendar
+	for _, c := range list {
+		if c.Deleted || c.ID == "" {
+			continue
+		}
+		rc := store.RemoteCalendar{RemoteID: c.ID, Name: c.Summary, Color: c.BackgroundColor,
+			AccessRole: c.AccessRole, Primary: c.Primary, Selected: c.Selected}
+		if c.SummaryOverride != "" {
+			rc.Name = c.SummaryOverride
+		}
+		if c.Primary {
+			rc.RemoteID = PrimaryCalendar // so heißt er auch in den Terminen
+		}
+		remote = append(remote, rc)
+	}
+	if err := st.SyncCalendarList(ctx, userID, accountID, remote); err != nil {
+		return rep, err
+	}
+	cals, err := st.ListCalendars(ctx, userID)
+	if err != nil {
+		return rep, err
+	}
+	for _, c := range cals {
+		if !c.Enabled || c.AccessRole == "freeBusyReader" {
+			continue
+		}
+		err := SyncCalendar(ctx, st, api, userID, accountID, c.RemoteID, c.Writable, rep)
+		if err == nil {
+			rep.Calendars++
+			continue
+		}
+		if errors.Is(err, ErrRevoked) || IsStatus(err, http.StatusUnauthorized) || ctx.Err() != nil {
+			return rep, err
+		}
+		rep.Problems = append(rep.Problems, fmt.Sprintf("Kalender „%s“: %v", c.Name, err))
+	}
+	return rep, nil
 }

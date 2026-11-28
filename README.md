@@ -51,7 +51,7 @@ go test ./...
 
 ## Google-Abgleich
 
-Der Hauptkalender wird mit Google Kalender in beide Richtungen abgeglichen – alle fünf Minuten und auf Knopfdruck (Knopf „Google“ oben rechts). Kontakte und Aufgaben folgen. Den nötigen eigenen Google-Zugang beschreibt [docs/GOOGLE-EINRICHTUNG.md](docs/GOOGLE-EINRICHTUNG.md).
+Deine Google-Kalender werden in beide Richtungen abgeglichen (welche, stellst du im Google-Dialog ein) – alle fünf Minuten und auf Knopfdruck (Knopf „Google“ oben rechts). Kontakte und Aufgaben folgen. Den nötigen eigenen Google-Zugang beschreibt [docs/GOOGLE-EINRICHTUNG.md](docs/GOOGLE-EINRICHTUNG.md).
 
 Das Google-Token liegt verschlüsselt in der Datenbank; der Schlüssel `secret.key` liegt im Datenordner. Den Datenordner daher nicht in geteilte Cloud-Ordner legen.
 

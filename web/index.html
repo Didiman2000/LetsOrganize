@@ -58,6 +58,8 @@
     <form method="dialog" novalidate>
       <h2 class="dialog-title"></h2>
       <label class="wide">{{t .Lang "event.title"}}<input name="title" required maxlength="500" autocomplete="off"></label>
+      <p class="readonly-hint" hidden></p>
+      <label class="wide calendar-pick" hidden>{{t .Lang "cal.label"}}<select name="calendarId"></select></label>
       <label class="check"><input type="checkbox" name="allDay"> {{t .Lang "event.allDay"}}</label>
       <div class="row">
         <label>{{t .Lang "event.date"}}<input type="date" name="date" required></label>
@@ -219,6 +221,10 @@
       <h2 class="dialog-title">{{t .Lang "google.title"}}</h2>
       <p class="google-state"></p>
       <p class="google-detail"></p>
+      <fieldset class="google-calendars" hidden>
+        <legend>{{t .Lang "cal.list"}}</legend>
+        <ul></ul>
+      </fieldset>
       <ul class="google-problems"></ul>
       <p class="dialog-error" role="alert"></p>
       <div class="buttons">

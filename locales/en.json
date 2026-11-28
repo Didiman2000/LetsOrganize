@@ -138,6 +138,12 @@
     "google.close": "Close",
     "google.connected": "Connected.",
     "google.failed": "Google sign-in failed:",
-    "google.error": "Sync error:"
+    "google.error": "Sync error:",
+    "cal.label": "Calendar",
+    "cal.list": "Calendars to sync and show",
+    "cal.readonly": "read only",
+    "cal.readonlyHint": "Read only – appointment from the calendar “{name}”.",
+    "cal.moveLater": "The calendar of an existing appointment cannot be changed yet.",
+    "cal.local": "Only in LetsOrganize"
   }
 }

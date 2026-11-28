@@ -204,3 +204,40 @@ func (a *API) DeleteEvent(ctx context.Context, calendarID, id string) error {
 	}
 	return err
 }
+
+// CalendarListEntry ist ein Kalender aus der Kalenderliste des Kontos.
+type CalendarListEntry struct {
+	ID              string `json:"id"`
+	Summary         string `json:"summary"`
+	SummaryOverride string `json:"summaryOverride"`
+	BackgroundColor string `json:"backgroundColor"`
+	AccessRole      string `json:"accessRole"`
+	Primary         bool   `json:"primary"`
+	Selected        bool   `json:"selected"`
+	Deleted         bool   `json:"deleted"`
+}
+
+// ListCalendars liefert alle Kalender, die das Konto in Google sieht.
+func (a *API) ListCalendars(ctx context.Context) ([]CalendarListEntry, error) {
+	var out []CalendarListEntry
+	pageToken := ""
+	for page := 0; page < 100; page++ {
+		q := url.Values{"maxResults": {"250"}}
+		if pageToken != "" {
+			q.Set("pageToken", pageToken)
+		}
+		var p struct {
+			Items         []CalendarListEntry `json:"items"`
+			NextPageToken string              `json:"nextPageToken"`
+		}
+		if err := a.do(ctx, http.MethodGet, a.CalendarURL+"/users/me/calendarList?"+q.Encode(), nil, nil, &p); err != nil {
+			return nil, err
+		}
+		out = append(out, p.Items...)
+		if p.NextPageToken == "" {
+			return out, nil
+		}
+		pageToken = p.NextPageToken
+	}
+	return nil, errors.New("zu viele Seiten in der Kalenderliste")
+}

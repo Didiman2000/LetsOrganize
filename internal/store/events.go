@@ -39,10 +39,13 @@ type Event struct {
 	RRule    string    `json:"rrule,omitempty"`
 	// TimeZone ist die IANA-Zeitzone (z. B. Europe/Berlin), in der eine Serie
 	// gilt. Damit bleibt „jeden Montag 9 Uhr“ auch nach der Zeitumstellung 9 Uhr.
-	TimeZone        string    `json:"timeZone,omitempty"`
-	ReminderMinutes *int      `json:"reminderMinutes,omitempty"`
-	CategoryID      *int64    `json:"categoryId,omitempty"`
-	UpdatedAt       time.Time `json:"updatedAt"`
+	TimeZone        string `json:"timeZone,omitempty"`
+	ReminderMinutes *int   `json:"reminderMinutes,omitempty"`
+	CategoryID      *int64 `json:"categoryId,omitempty"`
+	// CalendarID ist der Google-Kalender ("primary" = Hauptkalender, leer = nur lokal
+	// bzw. beim nächsten Abgleich in den Hauptkalender).
+	CalendarID string    `json:"calendarId"`
+	UpdatedAt  time.Time `json:"updatedAt"`
 
 	// Nur in Listen: Bei Vorkommen einer Serie stehen in Start/End die Zeiten
 	// dieses Vorkommens, in SeriesStart der Beginn des ersten Termins.
@@ -120,7 +123,7 @@ func (e *Event) normalize() error {
 	return nil
 }
 
-const eventColumns = `id, title, location, notes, all_day, starts_at, ends_at, rrule, time_zone, exdates, reminder_minutes, category_id, updated_at`
+const eventColumns = `id, title, location, notes, all_day, starts_at, ends_at, rrule, time_zone, exdates, reminder_minutes, category_id, updated_at, calendar_id`
 
 func scanEvent(row interface{ Scan(...any) error }) (*Event, error) {
 	var e Event
@@ -128,7 +131,7 @@ func scanEvent(row interface{ Scan(...any) error }) (*Event, error) {
 	var reminder sql.NullInt64
 	var category sql.NullInt64
 	if err := row.Scan(&e.ID, &e.Title, &e.Location, &e.Notes, &e.AllDay, &start, &end, &e.RRule, &e.TimeZone, &exdates,
-		&reminder, &category, &updated); err != nil {
+		&reminder, &category, &updated, &e.CalendarID); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrNotFound
 		}
@@ -172,6 +175,7 @@ func (s *Store) ListEvents(ctx context.Context, userID int64, from, to time.Time
 	single, err := s.queryEvents(ctx,
 		`SELECT `+eventColumns+` FROM events
 		  WHERE user_id = ? AND deleted_at IS NULL AND rrule = ''
+		    AND calendar_id NOT IN (SELECT remote_id FROM calendars WHERE user_id = events.user_id AND enabled = 0)
 		    AND starts_at < ? AND (ends_at > ? OR (ends_at = starts_at AND starts_at >= ?))`,
 		userID, formatTime(to), formatTime(from), formatTime(from))
 	if err != nil {
@@ -181,7 +185,8 @@ func (s *Store) ListEvents(ctx context.Context, userID int64, from, to time.Time
 
 	series, err := s.queryEvents(ctx,
 		`SELECT `+eventColumns+` FROM events
-		  WHERE user_id = ? AND deleted_at IS NULL AND rrule <> '' AND starts_at < ?`,
+		  WHERE user_id = ? AND deleted_at IS NULL AND rrule <> '' AND starts_at < ?
+		    AND calendar_id NOT IN (SELECT remote_id FROM calendars WHERE user_id = events.user_id AND enabled = 0)`,
 		userID, formatTime(to))
 	if err != nil {
 		return nil, err
@@ -330,16 +335,19 @@ func (s *Store) CreateEvent(ctx context.Context, userID int64, e Event) (*Event,
 	if err := e.normalize(); err != nil {
 		return nil, err
 	}
+	if err := s.checkCalendarWritable(ctx, userID, e.CalendarID); err != nil {
+		return nil, err
+	}
 	if err := s.checkCategory(ctx, userID, e.CategoryID); err != nil {
 		return nil, err
 	}
 	now := formatTime(time.Now())
 	res, err := s.DB.ExecContext(ctx,
 		`INSERT INTO events (user_id, title, location, notes, all_day, starts_at, ends_at, rrule, time_zone,
-		                     reminder_minutes, category_id, dirty, created_at, updated_at)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)`,
+		                     reminder_minutes, category_id, calendar_id, dirty, created_at, updated_at)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)`,
 		userID, e.Title, e.Location, e.Notes, e.AllDay, formatTime(e.Start), formatTime(e.End), e.RRule, e.TimeZone,
-		nullable(e.ReminderMinutes), nullable(e.CategoryID), now, now)
+		nullable(e.ReminderMinutes), nullable(e.CategoryID), e.CalendarID, now, now)
 	if err != nil {
 		return nil, fmt.Errorf("Termin anlegen: %w", err)
 	}
@@ -352,15 +360,30 @@ func (s *Store) UpdateEvent(ctx context.Context, userID int64, e Event) (*Event,
 	if err := e.normalize(); err != nil {
 		return nil, err
 	}
+	cur, remoteID, err := s.eventCalendar(ctx, userID, e.ID)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkCalendarWritable(ctx, userID, cur); err != nil {
+		return nil, err
+	}
+	if e.CalendarID != cur {
+		if remoteID != "" {
+			return nil, &ValidationError{"calendarId", "ein Termin, der schon bei Google ist, lässt sich noch nicht in einen anderen Kalender verschieben"}
+		}
+		if err := s.checkCalendarWritable(ctx, userID, e.CalendarID); err != nil {
+			return nil, err
+		}
+	}
 	if err := s.checkCategory(ctx, userID, e.CategoryID); err != nil {
 		return nil, err
 	}
 	res, err := s.DB.ExecContext(ctx,
 		`UPDATE events SET title = ?, location = ?, notes = ?, all_day = ?, starts_at = ?, ends_at = ?,
-		       rrule = ?, time_zone = ?, reminder_minutes = ?, category_id = ?, dirty = 1, updated_at = ?
+		       rrule = ?, time_zone = ?, reminder_minutes = ?, category_id = ?, calendar_id = ?, dirty = 1, updated_at = ?
 		  WHERE id = ? AND user_id = ? AND deleted_at IS NULL`,
 		e.Title, e.Location, e.Notes, e.AllDay, formatTime(e.Start), formatTime(e.End),
-		e.RRule, e.TimeZone, nullable(e.ReminderMinutes), nullable(e.CategoryID), formatTime(time.Now()),
+		e.RRule, e.TimeZone, nullable(e.ReminderMinutes), nullable(e.CategoryID), e.CalendarID, formatTime(time.Now()),
 		e.ID, userID)
 	if err != nil {
 		return nil, fmt.Errorf("Termin ändern: %w", err)
@@ -371,8 +394,26 @@ func (s *Store) UpdateEvent(ctx context.Context, userID int64, e Event) (*Event,
 	return s.GetEvent(ctx, userID, e.ID)
 }
 
+// eventCalendar liefert Kalender und Google-Kennung eines Termins.
+func (s *Store) eventCalendar(ctx context.Context, userID, id int64) (calendarID, remoteID string, err error) {
+	err = s.DB.QueryRowContext(ctx,
+		`SELECT calendar_id, remote_id FROM events WHERE id = ? AND user_id = ? AND deleted_at IS NULL`, id, userID).
+		Scan(&calendarID, &remoteID)
+	if errors.Is(err, sql.ErrNoRows) {
+		err = ErrNotFound
+	}
+	return calendarID, remoteID, err
+}
+
 // DeleteEvent löscht einen Termin weich, damit die Löschung abgeglichen werden kann.
 func (s *Store) DeleteEvent(ctx context.Context, userID, id int64) error {
+	cur, _, err := s.eventCalendar(ctx, userID, id)
+	if err != nil {
+		return err
+	}
+	if err := s.checkCalendarWritable(ctx, userID, cur); err != nil {
+		return err
+	}
 	now := formatTime(time.Now())
 	res, err := s.DB.ExecContext(ctx,
 		`UPDATE events SET deleted_at = ?, updated_at = ?, dirty = 1
@@ -391,6 +432,9 @@ func (s *Store) DeleteEvent(ctx context.Context, userID, id int64) error {
 func (s *Store) DeleteOccurrence(ctx context.Context, userID, id int64, occurrence time.Time) error {
 	e, err := s.GetEvent(ctx, userID, id)
 	if err != nil {
+		return err
+	}
+	if err := s.checkCalendarWritable(ctx, userID, e.CalendarID); err != nil {
 		return err
 	}
 	if e.RRule == "" {

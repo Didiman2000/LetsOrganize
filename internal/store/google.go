@@ -120,7 +120,7 @@ func scanSyncEvent(row interface{ Scan(...any) error }) (*SyncEvent, error) {
 	var start, end, updated, exdates string
 	var reminder, category sql.NullInt64
 	if err := row.Scan(&se.ID, &se.Title, &se.Location, &se.Notes, &se.AllDay, &start, &end, &se.RRule, &se.TimeZone, &exdates,
-		&reminder, &category, &updated, &se.RemoteID, &se.ETag, &se.Dirty, &se.Deleted, &se.SeriesRemoteID, &se.OriginalStart); err != nil {
+		&reminder, &category, &updated, &se.CalendarID, &se.RemoteID, &se.ETag, &se.Dirty, &se.Deleted, &se.SeriesRemoteID, &se.OriginalStart); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrNotFound
 		}
@@ -144,9 +144,13 @@ func (s *Store) EventByRemote(ctx context.Context, userID int64, calendarID, rem
 		userID, calendarID, remoteID))
 }
 
-// DirtyEvents liefert lokal geänderte oder gelöschte Termine, die noch zu Google müssen.
-func (s *Store) DirtyEvents(ctx context.Context, userID int64) ([]SyncEvent, error) {
-	rows, err := s.DB.QueryContext(ctx, `SELECT `+syncColumns+` FROM events WHERE user_id = ? AND dirty = 1 ORDER BY id`, userID)
+// DirtyEvents liefert lokal geänderte oder gelöschte Termine eines Kalenders,
+// die noch zu Google müssen. Termine ohne Kalender gehören zum Hauptkalender.
+func (s *Store) DirtyEvents(ctx context.Context, userID int64, calendarID string) ([]SyncEvent, error) {
+	rows, err := s.DB.QueryContext(ctx,
+		`SELECT `+syncColumns+` FROM events
+		  WHERE user_id = ? AND dirty = 1 AND (calendar_id = ? OR (? = 'primary' AND calendar_id = ''))
+		  ORDER BY id`, userID, calendarID, calendarID)
 	if err != nil {
 		return nil, err
 	}
