@@ -442,8 +442,39 @@
     });
   }
 
+  // ---------- Planer ----------
+
+  let plannerYear = new Date().getFullYear();
+  let plannerEntries = [];
+  let plannerLoaded = false;
+  const plannerDialog = document.getElementById("planner-dialog");
+  const plannerForm = plannerDialog && plannerDialog.querySelector("form");
+
+  async function loadPlanner() {
+    try {
+      plannerEntries = await api("GET", `/api/planner?year=${plannerYear}`);
+      plannerLoaded = true;
+    } catch (_) {
+      plannerEntries = [];
+      plannerLoaded = false;
+    }
+  }
+
+  async function refreshPlanner() {
+    await loadPlanner();
+    if (section === "planner") render(false);
+  }
+
+  const isoDay = (y, m, d) => `${y}-${pad(m + 1)}-${pad(d)}`;
+  const entryOn = (key) => plannerEntries.find((e) => e.firstDay <= key && key <= e.lastDay);
+
+  function formatDay(key) {
+    const [y, m, d] = key.split("-").map(Number);
+    return fmt({ day: "numeric", month: "short" }).format(new Date(y, m - 1, d));
+  }
+
   function renderPlanner() {
-    const year = weekAnchor.getFullYear();
+    const year = plannerYear;
     const grid = (from, to) => {
       const g = el("div", { class: "planner" }, el("span"));
       for (let d = 1; d <= 31; d++) g.append(el("span", { class: "h" }, d % 5 === 0 || d === 1 ? fmtNum.format(d) : ""));
@@ -452,23 +483,296 @@
         const len = new Date(year, m + 1, 0).getDate();
         for (let d = 1; d <= 31; d++) {
           if (d > len) { g.append(el("span", { class: "d x" })); continue; }
-          const dow = new Date(year, m, d).getDay();
+          const date = new Date(year, m, d);
+          const dow = date.getDay();
           const we = dow === (weekStart + 5) % 7 || dow === (weekStart + 6) % 7;
-          g.append(el("span", { class: `d${we ? " we" : ""}`, title: fmt({ dateStyle: "full" }).format(new Date(year, m, d)) }));
+          const key = isoDay(year, m, d);
+          const entry = entryOn(key);
+          const title = fmt({ dateStyle: "full" }).format(date) + (entry ? ` – ${entry.title}` : "");
+          const cell = el("button", {
+            type: "button",
+            class: `d${we ? " we" : ""}${entry ? ` mark c-${entry.color}` : ""}${sameDay(date, new Date()) ? " today" : ""}`,
+            title, "aria-label": title,
+          });
+          if (plannerLoaded) cell.addEventListener("click", () => openPlannerDialog(entry || null, key));
+          else cell.disabled = true;
+          g.append(cell);
         }
       }
       return g;
     };
+    const legend = (from, to) => {
+      const half = plannerEntries.filter((e) => {
+        const a = e.firstDay.slice(0, 7), b = e.lastDay.slice(0, 7);
+        return a <= `${year}-${pad(to)}` && b >= `${year}-${pad(from + 1)}`;
+      });
+      return el("ul", { class: "planner-legend" }, ...half.map((e) =>
+        el("li", {}, el("button", { type: "button", onclick: () => openPlannerDialog(e) },
+          el("span", { class: `swatch c-${e.color}` }),
+          el("span", { class: "legend-title" }, e.title),
+          el("span", { class: "legend-dates" }, e.firstDay === e.lastDay ? formatDay(e.firstDay) : `${formatDay(e.firstDay)} – ${formatDay(e.lastDay)}`)))));
+    };
     const yearText = fmt({ year: "numeric" }).format(new Date(year, 0, 1));
+    const nav = el("div", { class: "nav" },
+      el("button", { type: "button", "aria-label": t("planner.prevYear"), title: t("planner.prevYear"), onclick: () => { plannerYear--; refreshPlanner(); } }, rtl ? "›" : "‹"),
+      el("button", { type: "button", onclick: () => { plannerYear = new Date().getFullYear(); refreshPlanner(); } }, t("calendar.today")),
+      el("button", { type: "button", "aria-label": t("planner.nextYear"), title: t("planner.nextYear"), onclick: () => { plannerYear++; refreshPlanner(); } }, rtl ? "‹" : "›"));
     pageStart.replaceChildren(
       el("header", { class: "page-head" }, el("h1", {}, t("tab.planner")), el("span", { class: "meta" }, yearText)),
-      grid(0, 6)
+      grid(0, 6), legend(0, 6)
     );
     pageEnd.replaceChildren(
-      el("header", { class: "page-head" }, el("h2", {}, yearText)),
-      grid(6, 12)
+      el("header", { class: "page-head" }, el("h2", {}, yearText), nav),
+      grid(6, 12), legend(6, 12)
     );
   }
+
+  function openPlannerDialog(entry, day) {
+    if (!plannerDialog) return;
+    plannerForm.reset();
+    plannerForm.dataset.id = entry ? entry.id : "";
+    plannerDialog.querySelector(".dialog-title").textContent = t(entry ? "planner.edit" : "planner.new");
+    plannerDialog.querySelector("[data-action=delete]").hidden = !entry;
+    plannerDialog.querySelector(".dialog-error").textContent = "";
+    const f = plannerForm.elements;
+    f.title.value = entry ? entry.title : "";
+    f.firstDay.value = entry ? entry.firstDay : day;
+    f.lastDay.value = entry ? entry.lastDay : day;
+    const color = entry ? entry.color : "blue";
+    plannerForm.querySelectorAll("input[name=color]").forEach((r) => (r.checked = r.value === color));
+    plannerDialog.showModal();
+    f.title.focus();
+  }
+
+  // ---------- Notizen ----------
+
+  let notes = [];
+  let notesLoaded = false;
+  let noteSelected = null;
+  let noteTimer = 0;
+  let noteSaving = Promise.resolve();
+
+  async function loadNotes() {
+    try {
+      notes = await api("GET", "/api/notes");
+      notesLoaded = true;
+    } catch (_) {
+      notes = [];
+      notesLoaded = false;
+    }
+    if (noteSelected) noteSelected = notes.find((n) => n.id === noteSelected.id) || null;
+  }
+
+  const noteLabel = (n) => n.title || (n.body.split("\n").find((l) => l.trim()) || "").slice(0, 80) || t("note.untitled");
+
+  function saveNoteSoon(n, status) {
+    clearTimeout(noteTimer);
+    status.textContent = t("note.saving");
+    noteTimer = setTimeout(() => {
+      noteSaving = noteSaving.then(async () => {
+        try {
+          const saved = await api("PUT", `/api/notes/${n.id}`, { title: n.title, body: n.body, position: n.position });
+          Object.assign(n, saved);
+          status.textContent = t("note.saved");
+          const row = pageStart.querySelector(`[data-note="${n.id}"] .note-title`);
+          if (row) row.textContent = noteLabel(n);
+        } catch (err) {
+          status.textContent = `${t("event.error")} ${err.message}`;
+        }
+      });
+    }, 700);
+  }
+
+  function renderNotes() {
+    const list = notes.length
+      ? el("ul", { class: "note-list" }, ...notes.map((n) =>
+          el("li", { "data-note": n.id }, el("button", {
+            type: "button", class: `note-row${noteSelected && noteSelected.id === n.id ? " selected" : ""}`,
+            onclick: async () => { await noteSaving; noteSelected = n; render(false); },
+          }, el("span", { class: "note-title" }, noteLabel(n)),
+             el("span", { class: "note-date" }, fmt({ day: "numeric", month: "short" }).format(new Date(n.updatedAt)))))))
+      : el("p", { class: "soon" }, t(notesLoaded ? "note.none" : "section.soon"));
+    pageStart.replaceChildren(
+      el("header", { class: "page-head" }, el("h1", {}, t("tab.notes")),
+        notesLoaded ? el("div", { class: "nav" }, el("button", { type: "button", onclick: newNote }, `+ ${t("note.new")}`)) : ""),
+      list
+    );
+    if (!noteSelected) {
+      pageEnd.replaceChildren(el("p", { class: "soon" }, t(notes.length ? "note.pick" : "note.none")));
+      return;
+    }
+    const n = noteSelected;
+    const status = el("span", { class: "meta note-status" }, "");
+    const title = el("input", { class: "note-title-input", maxlength: "500", placeholder: t("note.titlePlaceholder"), "aria-label": t("note.titlePlaceholder") });
+    title.value = n.title;
+    const body = el("textarea", { class: "note-body", maxlength: "200000", "aria-label": t("tab.notes") });
+    body.value = n.body;
+    const onInput = () => {
+      n.title = title.value;
+      n.body = body.value;
+      if (!n.title.trim() && !n.body.trim()) return;
+      saveNoteSoon(n, status);
+    };
+    title.addEventListener("input", onInput);
+    body.addEventListener("input", onInput);
+    pageEnd.replaceChildren(
+      el("header", { class: "page-head note-head" }, title,
+        el("div", { class: "nav" }, status,
+          el("button", { type: "button", class: "danger", onclick: async () => {
+            clearTimeout(noteTimer);
+            await noteSaving;
+            try { await api("DELETE", `/api/notes/${n.id}`); } catch (_) {}
+            noteSelected = null;
+            await loadNotes();
+            render(false);
+          } }, t("event.delete")))),
+      body
+    );
+  }
+
+  async function newNote() {
+    try {
+      const n = await api("POST", "/api/notes", { title: t("note.untitled"), body: "" });
+      await loadNotes();
+      noteSelected = notes.find((x) => x.id === n.id) || n;
+      render(false);
+      const input = pageEnd.querySelector(".note-title-input");
+      if (input) { input.focus(); input.select(); }
+    } catch (_) {}
+  }
+
+  // ---------- Jahrestage ----------
+
+  let anniversaries = [];
+  let anniversariesLoaded = false;
+  const annDialog = document.getElementById("anniversary-dialog");
+  const annForm = annDialog && annDialog.querySelector("form");
+
+  async function loadAnniversaries() {
+    try {
+      anniversaries = await api("GET", "/api/anniversaries");
+      anniversariesLoaded = true;
+    } catch (_) {
+      anniversaries = [];
+      anniversariesLoaded = false;
+    }
+  }
+
+  async function refreshAnniversaries() {
+    await loadAnniversaries();
+    if (section === "anniversaries") render(false);
+  }
+
+  function renderAnniversaries() {
+    const thisYear = new Date().getFullYear();
+    const today = new Date();
+    const months = (from, to) => el("div", { class: "ann-months" }, ...Array.from({ length: to - from }, (_, i) => {
+      const m = from + i + 1;
+      const items = anniversaries.filter((a) => a.month === m);
+      return el("section", { class: "ann-month" },
+        el("h3", {}, fmt({ month: "long" }).format(new Date(2000, m - 1, 1)),
+          anniversariesLoaded ? el("button", { type: "button", class: "day-add", "aria-label": t("ann.new"), title: t("ann.new"), onclick: () => openAnnDialog(null, m) }, "+") : ""),
+        el("ul", {}, ...items.map((a) => {
+          const age = a.year ? thisYear - a.year : null;
+          const isToday = a.month === today.getMonth() + 1 && a.day === today.getDate();
+          return el("li", { class: isToday ? "today" : "" },
+            el("button", { type: "button", class: `ann-item ${a.kind}`, onclick: () => a.kind === "custom" ? openAnnDialog(a) : showContact(a.contactId) },
+              el("span", { class: "ann-day" }, fmtNum.format(a.day)),
+              el("span", { class: "ann-title" }, a.title),
+              a.kind === "birthday" ? el("span", { class: "ann-kind" }, t("contact.birthday")) : "",
+              age !== null && age > 0 ? el("span", { class: "ann-age" }, t("ann.age", { n: fmtNum.format(age) })) : ""));
+        })));
+    }));
+    pageStart.replaceChildren(
+      el("header", { class: "page-head" }, el("h1", {}, t("tab.anniversaries")),
+        el("span", { class: "meta" }, fmt({ year: "numeric" }).format(new Date(thisYear, 0, 1)))),
+      months(0, 6)
+    );
+    pageEnd.replaceChildren(
+      el("header", { class: "page-head" }, el("h2", {}, "\u00a0")),
+      months(6, 12)
+    );
+  }
+
+  async function showContact(id) {
+    await loadContacts();
+    const c = contacts.find((x) => x.id === id);
+    if (!c) return;
+    contactSelected = c;
+    contactSearch = "";
+    contactLetter = registerOf(c);
+    section = "addresses";
+    render(true);
+  }
+
+  function openAnnDialog(a, month) {
+    if (!annDialog) return;
+    annForm.reset();
+    annForm.dataset.id = a ? a.id : "";
+    annDialog.querySelector(".dialog-title").textContent = t(a ? "ann.edit" : "ann.new");
+    annDialog.querySelector("[data-action=delete]").hidden = !a;
+    annDialog.querySelector(".dialog-error").textContent = "";
+    const f = annForm.elements;
+    f.title.value = a ? a.title : "";
+    const sel = f.month;
+    if (!sel.options.length) {
+      for (let m = 1; m <= 12; m++) sel.append(el("option", { value: String(m) }, fmt({ month: "long" }).format(new Date(2000, m - 1, 1))));
+    }
+    sel.value = String(a ? a.month : month || new Date().getMonth() + 1);
+    f.day.value = a ? a.day : "";
+    f.year.value = a && a.year ? a.year : "";
+    annDialog.showModal();
+    f.title.focus();
+  }
+
+  // Gemeinsamer Ablauf für einfache Dialoge: Speichern, Löschen, Fehler zeigen.
+  function wireDialog(dlg, form, base, readBody, after) {
+    if (!form) return;
+    const error = dlg.querySelector(".dialog-error");
+    form.addEventListener("submit", async (ev) => {
+      if (ev.submitter && ev.submitter.value === "cancel") return;
+      ev.preventDefault();
+      const id = form.dataset.id;
+      try {
+        await api(id ? "PUT" : "POST", id ? `${base}/${id}` : base, readBody(form.elements));
+        dlg.close();
+        after();
+      } catch (err) {
+        error.textContent = `${t("event.error")} ${err.message}`;
+      }
+    });
+    dlg.querySelector("[data-action=delete]").addEventListener("click", async () => {
+      const id = form.dataset.id;
+      if (!id) return;
+      try {
+        await api("DELETE", `${base}/${id}`);
+        dlg.close();
+        after();
+      } catch (err) {
+        error.textContent = `${t("event.error")} ${err.message}`;
+      }
+    });
+  }
+
+  wireDialog(plannerDialog, plannerForm, "/api/planner", (f) => ({
+    title: f.title.value,
+    firstDay: f.firstDay.value,
+    lastDay: f.lastDay.value || f.firstDay.value,
+    color: (plannerForm.querySelector("input[name=color]:checked") || { value: "blue" }).value,
+  }), refreshPlanner);
+  if (plannerForm) {
+    plannerForm.elements.firstDay.addEventListener("change", () => {
+      const f = plannerForm.elements;
+      if (!f.lastDay.value || f.lastDay.value < f.firstDay.value) f.lastDay.value = f.firstDay.value;
+    });
+  }
+
+  wireDialog(annDialog, annForm, "/api/anniversaries", (f) => ({
+    title: f.title.value,
+    month: Number(f.month.value),
+    day: Number(f.day.value),
+    year: f.year.value ? Number(f.year.value) : null,
+  }), refreshAnniversaries);
 
   // ---------- Adressen ----------
 
@@ -671,6 +975,7 @@
         contactLetter = registerOf(saved);
         contactSearch = "";
         refreshContacts(false);
+        loadAnniversaries();
       } catch (err) {
         contactDialog.querySelector(".dialog-error").textContent = `${t("event.error")} ${err.message}`;
       }
@@ -689,17 +994,12 @@
     });
   }
 
-  function renderGeneric() {
-    pageStart.replaceChildren(el("header", { class: "page-head" }, el("h1", {}, t(`tab.${section}`))));
-    pageEnd.replaceChildren(el("p", { class: "soon" }, t("section.soon")));
-  }
-
   function render(animate) {
     binder.dataset.section = section;
     const tab = tabs.find((b) => b.dataset.tab === section);
     tabs.forEach((b) => b.setAttribute("aria-current", String(b === tab)));
     setPaper(tab ? tab.dataset.paper : "lined");
-    ({ calendar: renderCalendar, todo: renderTodo, planner: renderPlanner, addresses: renderAddresses }[section] || renderGeneric)();
+    ({ calendar: renderCalendar, todo: renderTodo, addresses: renderAddresses, notes: renderNotes, planner: renderPlanner, anniversaries: renderAnniversaries }[section] || renderCalendar)();
     if (animate) turn();
   }
 
@@ -723,6 +1023,6 @@
     .then((r) => r.json())
     .then((data) => { messages = data.messages || {}; })
     .catch(() => {})
-    .then(() => Promise.all([loadWeek(), loadTasks(), loadContacts()]))
+    .then(() => Promise.all([loadWeek(), loadTasks(), loadContacts(), loadNotes(), loadPlanner(), loadAnniversaries()]))
     .finally(() => render(false));
 })();

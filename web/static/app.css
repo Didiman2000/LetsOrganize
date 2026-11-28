@@ -534,6 +534,82 @@ body[data-tab-shape="notched"] .tab { border-start-end-radius: 14px 4px; border-
   .field-row [name=fieldValue] { grid-column: 1 / 3; }
 }
 
+/* ---------- Planer ---------- */
+
+.planner .d { padding: 0; border: 0; cursor: pointer; }
+.planner .d:disabled { cursor: default; }
+.planner .d:hover:not(.x):not(:disabled) { outline: 2px solid var(--section-color); outline-offset: -2px; }
+.planner .d.today { box-shadow: inset 0 0 0 2px var(--lo-color-accent); }
+.planner .d.mark { opacity: 0.85; }
+.c-red    { background: var(--lo-tab-calendar) !important; }
+.c-orange { background: var(--lo-tab-todo) !important; }
+.c-green  { background: var(--lo-tab-addresses) !important; }
+.c-blue   { background: var(--lo-tab-notes) !important; }
+.c-purple { background: var(--lo-tab-planner) !important; }
+.c-brown  { background: var(--lo-tab-anniversaries) !important; }
+.planner-legend { position: relative; z-index: 1; list-style: none; margin: 14px 0 0; padding: 0; columns: 2; column-gap: 16px; }
+.planner-legend button { display: flex; align-items: center; gap: 8px; inline-size: 100%; padding-block: 3px; padding-inline: 0; border: 0; background: none; color: var(--lo-color-ink); font: inherit; font-size: 14px; text-align: start; cursor: pointer; }
+.planner-legend button:hover .legend-title { text-decoration: underline; }
+.swatch { flex: none; display: inline-block; inline-size: 14px; block-size: 14px; border-radius: 3px; }
+.legend-title { font-family: var(--lo-font-hand); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.legend-dates { margin-inline-start: auto; color: var(--lo-color-ink-soft); font-size: 12px; white-space: nowrap; }
+.planner-dialog { border-block-start-color: var(--lo-tab-planner); }
+.planner-dialog h2 { color: var(--lo-tab-planner); }
+.planner-dialog .buttons .primary { background: var(--lo-tab-planner); border-color: var(--lo-tab-planner); }
+.colors { display: flex; flex-wrap: wrap; gap: 10px; margin: 0; padding: 10px; border: 1px solid var(--lo-color-line); border-radius: 6px; }
+.colors legend { padding-inline: 4px; font-size: 13px; color: var(--lo-color-ink-soft); }
+.color-pick { cursor: pointer; }
+.color-pick input { position: absolute; opacity: 0; }
+.color-pick .swatch { inline-size: 28px; block-size: 28px; border-radius: 50%; box-shadow: 0 0 0 2px var(--lo-color-paper), 0 0 0 3px transparent; }
+.color-pick input:checked + .swatch { box-shadow: 0 0 0 2px var(--lo-color-paper), 0 0 0 4px var(--lo-color-ink); }
+.color-pick input:focus-visible + .swatch { outline: 2px solid var(--lo-color-ink); outline-offset: 4px; }
+
+/* ---------- Notizen ---------- */
+
+.note-list { position: relative; z-index: 1; list-style: none; margin: 0; padding: 0; }
+.note-row { display: flex; align-items: baseline; gap: 10px; inline-size: 100%; block-size: 28px; padding-block: 0; padding-inline: 4px; border: 0; border-radius: 3px; background: none; color: var(--lo-color-ink); font: inherit; text-align: start; cursor: pointer; }
+.note-row:hover, .note-row:focus-visible { background: color-mix(in srgb, var(--section-color) 10%, transparent); outline: none; }
+.note-row.selected { background: color-mix(in srgb, var(--section-color) 18%, transparent); }
+.note-title { font-family: var(--lo-font-hand); font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.note-date { margin-inline-start: auto; color: var(--lo-color-ink-soft); font-size: 12px; white-space: nowrap; }
+.note-head { gap: 10px; }
+.note-title-input { flex: 1; min-inline-size: 0; padding: 0; border: 0; background: transparent; color: var(--section-color); font-family: var(--lo-font-heading); font-size: 26px; }
+.note-title-input:focus { outline: none; }
+.note-status { font-size: 12px; }
+.nav .danger { color: var(--lo-color-accent); }
+.note-body {
+  position: relative; z-index: 1;
+  display: block;
+  inline-size: 100%;
+  block-size: calc(100% - 64px);
+  min-block-size: 300px;
+  padding: 0; padding-block-start: 1px;
+  border: 0; resize: none;
+  background: transparent;
+  color: var(--lo-color-ink);
+  font-family: var(--lo-font-hand); font-size: 16px;
+  line-height: var(--line-gap);
+}
+.note-body:focus { outline: none; }
+
+/* ---------- Jahrestage ---------- */
+
+.ann-months { position: relative; z-index: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 18px; }
+.ann-month h3 { display: flex; align-items: center; gap: 6px; margin: 0 0 2px; padding-block-end: 2px; border-block-end: 1px solid var(--section-color); font-family: var(--lo-font-heading); font-weight: normal; font-size: 16px; color: var(--section-color); }
+.ann-month h3 .day-add { opacity: 0.5; inline-size: 20px; block-size: 20px; font-size: 14px; }
+.ann-month:hover h3 .day-add, .ann-month h3 .day-add:focus-visible { opacity: 1; }
+.ann-month ul { list-style: none; margin: 0 0 6px; padding: 0; min-block-size: 22px; }
+.ann-item { display: flex; align-items: baseline; gap: 6px; inline-size: 100%; padding-block: 1px; padding-inline: 0; border: 0; background: none; color: var(--lo-color-ink); font: inherit; font-size: 14px; text-align: start; cursor: pointer; }
+.ann-item:hover .ann-title { text-decoration: underline; }
+.ann-day { min-inline-size: 1.6em; font-family: var(--lo-font-heading); color: var(--lo-color-ink-soft); }
+.ann-title { font-family: var(--lo-font-hand); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ann-kind, .ann-age { flex: none; font-size: 11px; color: var(--lo-color-ink-soft); }
+.ann-age { margin-inline-start: auto; }
+.ann-month li.today .ann-title { color: var(--lo-color-accent); font-weight: bold; }
+.anniversary-dialog { border-block-start-color: var(--lo-tab-anniversaries); }
+.anniversary-dialog h2 { color: var(--lo-tab-anniversaries); }
+.anniversary-dialog .buttons .primary { background: var(--lo-tab-anniversaries); border-color: var(--lo-tab-anniversaries); }
+
 /* ---------- Rechts nach links ---------- */
 
 [dir="rtl"] .page-start::after { background: linear-gradient(to left,  transparent, rgba(0, 0, 0, 0.13)); }

@@ -94,6 +94,7 @@ func New(cfg Config) (*Server, error) {
 		s.routesEvents()
 		s.routesTasks()
 		s.routesContacts()
+		s.routesRegisters()
 	}
 	return s, nil
 }

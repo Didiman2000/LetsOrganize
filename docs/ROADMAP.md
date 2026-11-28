@@ -62,7 +62,10 @@ MCP-Schnittstelle für externe KI-Agenten (siehe Phase 7). Später: Anrufe, Gmai
 - [ ] Aufgaben: Reihenfolge per Ziehen, Kategorien
 - [x] Adressen: Register je Sprache (A–Z, arabisches Alphabet), Suche in Namen, Firma und Feldern, Telefon/E-Mail/Anschrift/Webseite, Geburtstag mit oder ohne Jahr (Schnittstelle /api/contacts)
 - [ ] Adressen: Fotos, Gruppen, Export als vCard
-- [ ] Notizen, Planer, Jahrestage
+- [x] Notizen: Liste und Seite mit automatischem Speichern (/api/notes)
+- [x] Planer: Jahresübersicht mit farbigen Zeiträumen, Jahr blättern (/api/planner, Migration 0002 für Farben)
+- [x] Jahrestage: eigene Jahrestage plus Geburtstage aus dem Adressbuch, Alter, Sprung zum Kontakt (/api/anniversaries)
+- [ ] Wiederkehrende Termine, Erinnerungen, Kategorien
 
 ### Phase 4 – Google-Abgleich
 - [ ] OAuth-Anmeldung, Token verschlüsselt speichern

@@ -142,6 +142,52 @@
     </form>
   </dialog>
 
+  <dialog class="event-dialog planner-dialog" id="planner-dialog">
+    <form method="dialog" novalidate>
+      <h2 class="dialog-title"></h2>
+      <label class="wide">{{t .Lang "planner.title"}}<input name="title" required maxlength="500" autocomplete="off"></label>
+      <div class="row">
+        <label>{{t .Lang "planner.firstDay"}}<input type="date" name="firstDay" required></label>
+        <label>{{t .Lang "planner.lastDay"}}<input type="date" name="lastDay"></label>
+      </div>
+      <fieldset class="colors">
+        <legend>{{t .Lang "planner.color"}}</legend>
+          <label class="color-pick"><input type="radio" name="color" value="red"><span class="swatch c-red"></span></label>
+          <label class="color-pick"><input type="radio" name="color" value="orange"><span class="swatch c-orange"></span></label>
+          <label class="color-pick"><input type="radio" name="color" value="green"><span class="swatch c-green"></span></label>
+          <label class="color-pick"><input type="radio" name="color" value="blue"><span class="swatch c-blue"></span></label>
+          <label class="color-pick"><input type="radio" name="color" value="purple"><span class="swatch c-purple"></span></label>
+          <label class="color-pick"><input type="radio" name="color" value="brown"><span class="swatch c-brown"></span></label>
+      </fieldset>
+      <p class="dialog-error" role="alert"></p>
+      <div class="buttons">
+        <button type="button" class="danger" data-action="delete">{{t .Lang "event.delete"}}</button>
+        <span class="spacer"></span>
+        <button type="submit" value="cancel" formnovalidate>{{t .Lang "event.cancel"}}</button>
+        <button type="submit" value="save" class="primary">{{t .Lang "event.save"}}</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="event-dialog anniversary-dialog" id="anniversary-dialog">
+    <form method="dialog" novalidate>
+      <h2 class="dialog-title"></h2>
+      <label class="wide">{{t .Lang "ann.title"}}<input name="title" required maxlength="500" autocomplete="off"></label>
+      <div class="row">
+        <label>{{t .Lang "ann.day"}}<input type="number" name="day" min="1" max="31" required></label>
+        <label>{{t .Lang "ann.month"}}<select name="month"></select></label>
+        <label>{{t .Lang "ann.year"}}<input type="number" name="year" min="1" max="9999"></label>
+      </div>
+      <p class="dialog-error" role="alert"></p>
+      <div class="buttons">
+        <button type="button" class="danger" data-action="delete">{{t .Lang "event.delete"}}</button>
+        <span class="spacer"></span>
+        <button type="submit" value="cancel" formnovalidate>{{t .Lang "event.cancel"}}</button>
+        <button type="submit" value="save" class="primary">{{t .Lang "event.save"}}</button>
+      </div>
+    </form>
+  </dialog>
+
   <footer class="footer">{{t .Lang "footer.license"}}</footer>
 </body>
 </html>
